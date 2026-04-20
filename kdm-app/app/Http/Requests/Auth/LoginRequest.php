@@ -33,22 +33,38 @@ class LoginRequest extends FormRequest
         ];
     }
 
-    public function authenticate(): void
+public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        // Change 'email' to 'username' here
-        if (! Auth::attempt($this->only('username', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        $login = $this->input('username');
+        $password = $this->input('password');
 
-            throw ValidationException::withMessages([
-                'username' => trans('auth.failed'),
+        // Detect if they typed an email format or a standard username
+        $loginField = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        // STEP 1: Does the username/email exist in the database?
+        $user = \App\Models\User::where($loginField, $login)->first();
+
+        if (! $user) {
+            \Illuminate\Support\Facades\RateLimiter::hit($this->throttleKey());
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'username' => 'We could not find an account with that ' . $loginField . '.',
             ]);
         }
 
-        RateLimiter::clear($this->throttleKey());
-    }
+        // STEP 2: Does the password match the database hash?
+        if (! \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+            \Illuminate\Support\Facades\RateLimiter::hit($this->throttleKey());
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'password' => 'The password you entered is incorrect.',
+            ]);
+        }
 
+        // STEP 3: If both pass, log the user in!
+        \Illuminate\Support\Facades\Auth::login($user, $this->boolean('remember'));
+        \Illuminate\Support\Facades\RateLimiter::clear($this->throttleKey());
+    }
     /**
      * Ensure the login request is not rate limited.
      *

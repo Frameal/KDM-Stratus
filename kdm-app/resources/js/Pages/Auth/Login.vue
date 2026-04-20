@@ -26,33 +26,39 @@
                     <p class="text-gray-400">Log in to the KDM Stratus network.</p>
                 </div>
 
-                <form @submit.prevent="submit" class="space-y-6">
-                    
+              <form @submit.prevent="submit" class="space-y-6">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Username</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Username or Email</label>
                         <input v-model="form.username" type="text" required autofocus
-                            class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition">
-                        <div v-if="form.errors.username" class="text-red-500 text-xs mt-2">{{ form.errors.username }}</div>
+                            class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                        <div v-if="form.errors.username" class="text-red-500 text-xs mt-1 font-bold">{{ form.errors.username }}</div>
                     </div>
 
-                    <div class="relative">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Password</label>
-                        <input v-model="form.password" :type="showPassword ? 'text' : 'password'" required
-                            class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition pr-12">
-                        
-                        <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-10 text-gray-500 hover:text-white transition">
-                            <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
-                        </button>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest">Password</label>
+                            <a :href="route('password.request')" class="text-xs text-blue-500 hover:text-blue-400 font-bold tracking-wide transition">
+                                Forgot your password?
+                            </a>
+                        </div>
+                        <input v-model="form.password" type="password" required
+                            class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                        <div v-if="form.errors.password" class="text-red-500 text-xs mt-1 font-bold">{{ form.errors.password }}</div>
                     </div>
 
-                    <div class="pt-4">
+                    <div class="block">
+                        <label class="flex items-center">
+                            <input type="checkbox" v-model="form.remember" class="rounded border-gray-700 bg-[#18191c] text-blue-600 shadow-sm focus:ring-blue-500" name="remember">
+                            <span class="ml-2 text-sm text-gray-400 font-semibold tracking-wide">Keep me securely logged in</span>
+                        </label>
+                    </div>
+
+                    <div class="pt-2">
                         <button type="submit" :disabled="form.processing" 
-                            class="w-full bg-white hover:bg-gray-200 text-black font-argentum uppercase tracking-widest py-4 rounded-lg text-lg transition transform hover:-translate-y-1 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50">
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-argentum uppercase tracking-widest py-4 rounded-lg text-lg transition transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer">
                             Log In
                         </button>
                     </div>
-
                 </form>
             </div>
         </main>

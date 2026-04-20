@@ -27,30 +27,24 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): \Illuminate\Http\RedirectResponse
     {
-        // 1. Check Admins Table (Plain-text bypass)
-        $admin = \App\Models\Admin::where('username', $request->username)
-                                  ->where('password', $request->password)
-                                  ->first();
-
-        if ($admin) {
-            // Log them in using the custom admin guard
-            Auth::guard('admin')->login($admin);
-            $request->session()->regenerate();
-
-            // Route based on specific role
-            if ($admin->role === 'hq') {
-                return redirect()->intended(route('hq.dashboard', absolute: false));
-            }
-            return redirect()->intended(route('branch.dashboard', absolute: false));
-        }
-
-        // 2. Check Users Table (Standard Hashed Customer Login)
         $request->authenticate();
+
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // The Smart Traffic Cop: Read the role from the database
+        $role = $request->user()->role;
+
+        // Route them to their specific dashboards
+        if ($role === 'hq') {
+            return redirect()->route('hq.dashboard');
+        } elseif ($role === 'manager') {
+            return redirect()->route('branch.dashboard');
+        }
+
+        // Default fallback for regular customers
+        return redirect()->route('dashboard');
     }
 
     /**

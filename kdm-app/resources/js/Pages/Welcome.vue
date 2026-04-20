@@ -38,7 +38,7 @@
         </section>
 
         <section class="py-10 bg-[#18191c] border-b border-gray-800 flex justify-center items-center animate-on-load">
-            <a href="/login" class="bg-white hover:bg-gray-200 text-black px-12 py-5 ...">                  
+            <a href="/login" class="bg-white hover:bg-gray-200 text-black px-12 py-5 rounded font-bold text-lg uppercase tracking-widest transition transform hover:-translate-y-1 shadow-lg shadow-white/10">                  
                 Select Branch & Reserve Now
              </a>
         </section>
@@ -182,8 +182,8 @@
                             <p class="text-blue-500 font-bold tracking-widest text-sm mt-1">KDM STRATUS NODE</p>
                         </div>
                         <div class="bg-gray-900 px-4 py-2 rounded border border-gray-800 text-center">
-                            <span class="block text-2xl font-bold text-white">{{ activeBranch.total_pcs }}</span>
-                            <span class="text-xs text-gray-500 font-bold uppercase tracking-widest">Total PCs</span>
+                            <span class="block mb-1">{{ activeBranch.pcs_count || 0 }} Total Terminals</span>
+                            <span class="text-green-500 font-bold">{{ activeBranch.free_pcs || 0 }} Available Now</span>
                         </div>
                     </div>
                     
@@ -194,12 +194,14 @@
                         </div>
                         <div class="flex items-center text-gray-300">
                             <svg class="w-6 h-6 mr-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            {{ activeBranch.operating_hours }}
+                            24/7 Operations
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
 
-                <section id="faq" class="py-32 bg-[#1c1d21]">
+        <section id="faq" class="py-32 bg-[#1c1d21]">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 scroll-trigger">
                 <div class="text-center mb-16">
                     <h2 class="text-sm font-bold text-gray-500 tracking-widest uppercase mb-4">Learn More</h2>
@@ -233,17 +235,15 @@
              </div>
         </section>
 
-            </div>
-        </section>
-
-        </div>
+    </div>
 </template>
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 
-// Accept the live database data from Laravel
 const props = defineProps({
+    canLogin: Boolean,
+    canRegister: Boolean,
     branches: Array
 });
 
@@ -256,9 +256,6 @@ const banners = [
 
 const activeBranch = ref(null);
 
-// ... keep the rest of your scroll animation logic below ...
-
-// Scroll Animation Logic
 const statsRef = ref(null);
 const statsAnimated = ref(false);
 const stats = reactive({ years: 0, branches: 0, customers: 0 });
@@ -275,12 +272,10 @@ const animateValue = (key, end, duration) => {
 };
 
 onMounted(() => {
-    // Hero Banner Interval
     setInterval(() => {
         activeBanner.value = (activeBanner.value + 1) % banners.length;
     }, 5000);
 
-    // Initial Load Animation (Fades in the Hero section immediately)
     setTimeout(() => {
         document.querySelectorAll('.animate-on-load').forEach(el => {
             el.classList.add('opacity-100');
@@ -288,15 +283,12 @@ onMounted(() => {
         });
     }, 100);
 
-    // Intersection Observer for Scroll Animations
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // Fade in the section
                 entry.target.classList.add('opacity-100', 'translate-y-0');
                 entry.target.classList.remove('opacity-0', 'translate-y-10');
                 
-                // Trigger numbers only when stats container is visible
                 if (entry.target.contains(statsRef.value) && !statsAnimated.value) {
                     statsAnimated.value = true;
                     animateValue('years', 4, 1500);
@@ -305,9 +297,8 @@ onMounted(() => {
                 }
             }
         });
-    }, { threshold: 0.15 }); // Triggers when 15% of the section is visible
+    }, { threshold: 0.15 });
 
-    // Attach observer to sections
     document.querySelectorAll('.scroll-trigger').forEach(el => {
         el.classList.add('opacity-0', 'translate-y-10', 'transition-all', 'duration-1000');
         observer.observe(el);
@@ -316,7 +307,6 @@ onMounted(() => {
 </script>
 
 <style>
-/* Font Injections */
 @font-face {
     font-family: 'ArgentumNovus';
     src: url('/fonts/ArgentumNovus-SemiBold.ttf') format('truetype');

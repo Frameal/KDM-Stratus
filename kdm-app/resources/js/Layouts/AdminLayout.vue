@@ -1,86 +1,55 @@
 <template>
-    <div class="flex h-screen w-screen overflow-hidden bg-[#1c1d21] text-gray-200 font-sans selection:bg-blue-500 selection:text-white">
+    <div class="min-h-screen bg-[#101113] text-gray-200 font-sans flex selection:bg-blue-500 selection:text-white">
         
-        <aside class="w-72 bg-[#18191c] border-r border-gray-800 flex flex-col justify-between flex-shrink-0 shadow-2xl z-20 h-full">
-            <div class="flex flex-col h-full">
-                
-                <div class="p-6 border-b border-gray-800 bg-[#101113] flex-shrink-0">
-                    <div class="flex items-center gap-4 mb-4">
-                        <img src="/images/logo.png" alt="KDM Logo" class="h-10 w-auto object-contain" onerror="this.style.display='none';" />
-                        <span class="font-azn tracking-widest text-2xl text-white">KDM</span>
-                    </div>
-                    <div class="font-bold text-white tracking-wide">{{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</div>
-                    
-                    <div v-if="$page.props.auth.user.role === 'hq'" class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">Global Executive Admin</div>
-                    <div v-else class="text-[10px] font-bold text-green-500 uppercase tracking-widest mt-1">Branch Manager</div>
-                </div>
+        <aside class="w-64 bg-[#18191c] border-r border-gray-800 flex flex-col shadow-2xl relative z-20 hidden md:flex">
+            <div class="h-24 flex items-center px-6 border-b border-gray-800 bg-[#101113]">
+                <img src="/images/logo.png" alt="KDM Logo" class="h-10 w-auto object-contain mr-3" onerror="this.style.display='none';" />
+                <span class="font-azn tracking-widest text-xl text-white mt-1">KDM Admin</span>
+            </div>
 
-                <nav class="flex-1 overflow-y-auto p-4 space-y-1 hide-scrollbar">
-                    
-                    <template v-if="$page.props.auth.user.role === 'hq'">
-                        <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-4 mb-2 pl-3">Command Center</p>
-                        <Link :href="route('hq.dashboard')" :class="{'bg-blue-600/10 text-blue-400 border-blue-500/20': $page.url === '/hq-dashboard'}" class="block w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-[#222328] hover:text-white font-bold tracking-wide transition border border-transparent">
-                            Macro Telemetry
-                        </Link>
-                        
-                        <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-6 mb-2 pl-3">Network Topology</p>
-                        <Link :href="route('hq.branches')" :class="{'bg-blue-600/10 text-blue-400 border-blue-500/20': $page.url.startsWith('/hq-branches')}" class="block w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-[#222328] hover:text-white font-bold tracking-wide transition border border-transparent">
-                            Branch Management
-                        </Link>
+            <nav v-if="$page.props.auth.user.role === 'manager'" class="flex-1 px-4 space-y-2 overflow-y-auto mt-6 custom-scrollbar">
+                <a :href="route('branch.dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Overview</a>
+                <a :href="route('branch.terminals')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/terminals') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Terminal Grid</a>
+                <a :href="route('branch.reservations')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/reservations') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Reservations</a>
+                <a :href="route('branch.feedback')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/feedback') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Local Feedback</a>
+            </nav>
 
-                        <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-6 mb-2 pl-3">Identity Access</p>
-                        <Link :href="route('hq.users')" :class="{'bg-blue-600/10 text-blue-400 border-blue-500/20': $page.url.startsWith('/hq-users')}" class="block w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-[#222328] hover:text-white font-bold tracking-wide transition border border-transparent">
-                            Account & Staff Audit
-                        </Link>
-                    </template>
+            <nav v-if="$page.props.auth.user.role === 'hq'" class="flex-1 px-4 space-y-2 overflow-y-auto mt-6 custom-scrollbar">
+                <a :href="route('hq.dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Global Matrix</a>
+                <a :href="route('hq.branches')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/branches') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Branch Ops</a>
+                <a :href="route('hq.users')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/users') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Enterprise Users</a>
+                <a :href="route('hq.reports')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/reports') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Global Reports</a>
+            </nav>
 
-                    <template v-if="$page.props.auth.user.role === 'manager'">
-                        <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-4 mb-2 pl-3">Local Operations</p>
-                        <Link :href="route('branch.dashboard')" :class="{'bg-green-600/10 text-green-400 border-green-500/20': $page.url === '/branch-dashboard'}" class="block w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-[#222328] hover:text-white font-bold tracking-wide transition border border-transparent">
-                            Local Telemetry
-                        </Link>
-                        
-                        <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-6 mb-2 pl-3">Hardware Control</p>
-                        <Link :href="route('branch.terminals')" :class="{'bg-green-600/10 text-green-400 border-green-500/20': $page.url.startsWith('/branch-terminals')}" class="block w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-[#222328] hover:text-white font-bold tracking-wide transition border border-transparent">
-                            Terminal Grid
-                        </Link>
-                    </template>
-
-                </nav>
-
-                <div class="p-4 border-t border-gray-800 flex-shrink-0">
-                    <Link :href="route('logout')" method="post" as="button" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-900/20 hover:bg-red-500 text-red-500 hover:text-white rounded-lg font-bold tracking-widest uppercase transition text-xs border border-red-900/50 hover:border-red-500">
-                        Secure Log Out
-                    </Link>
+            <div class="p-4 border-t border-gray-800">
+                <div class="bg-[#1c1d21] rounded-lg p-4 shadow-inner">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{{ $page.props.auth.user.role === 'hq' ? 'Executive Admin' : 'Branch Manager' }}</p>
+                    <p class="text-sm font-bold text-white truncate mt-1">{{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</p>
+                    <a href="/force-logout" class="mt-4 block text-center text-xs font-bold bg-red-900/20 text-red-400 hover:text-white hover:bg-red-600 border border-red-500/30 py-2.5 rounded transition uppercase tracking-widest">Secure Logout</a>
                 </div>
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col bg-[#1c1d21] h-full overflow-hidden relative">
-            <header class="bg-[#222328] border-b border-gray-800 px-8 py-6 flex-shrink-0 shadow-sm flex justify-between items-center z-10">
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#101113] relative">
+            <header class="h-24 bg-[#101113]/90 backdrop-blur-md border-b border-gray-800 flex items-center px-8 z-10 flex-shrink-0">
                 <h1 class="font-argentum text-2xl text-white uppercase tracking-widest">
-                    <slot name="header">System Dashboard</slot>
+                    <slot name="header"></slot>
                 </h1>
             </header>
-
-            <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <slot />
+            <div class="flex-1 overflow-y-auto p-8 relative z-10 custom-scrollbar">
+                <slot></slot>
             </div>
         </main>
-
     </div>
 </template>
 
-<script setup>
-import { Link } from '@inertiajs/vue3';
-</script>
-
-<style scoped>
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.custom-scrollbar::-webkit-scrollbar { width: 8px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: #1c1d21; }
+<style>
+@font-face { font-family: 'ArgentumNovus'; src: url('/fonts/ArgentumNovus-SemiBold.ttf') format('truetype'); font-weight: 600; }
+@font-face { font-family: 'AZNUnified'; src: url('/fonts/AZNUnified-Oblique-Trial.otf') format('opentype'); font-weight: normal; font-style: italic; }
+.font-argentum { font-family: 'ArgentumNovus', sans-serif; }
+.font-azn { font-family: 'AZNUnified', sans-serif; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 </style>

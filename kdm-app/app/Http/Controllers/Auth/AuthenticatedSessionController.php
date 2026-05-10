@@ -3,20 +3,16 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // <-- This fixes the red line!
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\LoginOtpMail;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Display the login view.
-     */
-    public function create(): Response
+    public function create()
     {
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
@@ -24,41 +20,74 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    /**
-     * Handle an incoming authentication request.
-     */
-    public function store(LoginRequest $request): \Illuminate\Http\RedirectResponse
+    public function store(Request $request)
     {
-        $request->authenticate();
+        $request->validate([
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
 
-        $request->session()->regenerate();
+        $user = \App\Models\User::where('username', $request->username)
+            ->orWhere('email', $request->username)->first();
 
-        // The Smart Traffic Cop: Read the role from the database
-        $role = $request->user()->role;
-
-        // Route them to their specific dashboards
-        if ($role === 'hq') {
-            return redirect()->route('hq.dashboard');
-        } elseif ($role === 'manager') {
-            return redirect()->route('branch.dashboard');
+        if (!$user) {
+            return back()->withErrors(['username' => 'Account not found. Please check your username or register.']);
         }
 
-        // Default fallback for regular customers
-        return redirect()->route('dashboard');
+        if (!\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return back()->withErrors(['password' => 'Incorrect password.']);
+        }
+
+        // ONLY apply Email OTP to Customers
+        if ($user->role === 'customer') {
+            $otpCode = sprintf("%06d", mt_rand(1, 999999));
+            
+            // BYPASS MASS ASSIGNMENT SECURITY
+            $user->email_otp = $otpCode;
+            $user->email_otp_expiry = now()->addMinutes(10);
+            $user->save();
+
+            try {
+                Mail::to($user->email)->send(new LoginOtpMail($otpCode));
+            } catch (\Exception $e) {
+                return back()->withErrors(['username' => 'Server Error: Could not send OTP email.']);
+            }
+
+            // Force save session data
+            $request->session()->put('mfa_user_id', $user->id);
+            $request->session()->save();
+
+            return Inertia::render('Auth/Login', [
+                'requires_mfa' => true,
+                'masked_email' => $this->maskEmail($user->email)
+            ]);
+        }
+
+        // STAFF BYPASS
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+        
+        $redirectUrl = route('dashboard');
+        if ($user->role === 'hq') $redirectUrl = route('hq.dashboard');
+        if ($user->role === 'manager') $redirectUrl = route('branch.dashboard');
+
+        return redirect($redirectUrl);
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
-        // Log out both guards just to be safe
         Auth::guard('web')->logout();
-        Auth::guard('admin')->logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
         return redirect('/');
+    }
+
+    private function maskEmail($email) {
+        $parts = explode('@', $email);
+        if(count($parts) !== 2) return $email;
+        $name = $parts[0];
+        $domain = $parts[1];
+        $maskedName = substr($name, 0, 2) . str_repeat('*', max(strlen($name) - 2, 2));
+        return $maskedName . '@' . $domain;
     }
 }

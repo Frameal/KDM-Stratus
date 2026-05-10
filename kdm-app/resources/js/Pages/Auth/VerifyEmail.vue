@@ -1,58 +1,53 @@
-
 <template>
-    <div class="min-h-screen bg-[#1c1d21] text-gray-200 font-sans selection:bg-white selection:text-black flex flex-col">
-        
-        <nav class="w-full z-50 bg-[#1c1d21] border-b border-gray-800 h-24 flex-shrink-0 shadow-md">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                <div class="flex justify-between items-center h-full">
-                    <div class="flex-shrink-0 flex items-center gap-4">
-                        <img src="/images/logo.png" alt="KDM Logo" class="h-16 w-auto object-contain" onerror="this.style.display='none';" />
-                        <span class="font-azn tracking-widest text-4xl text-white">KDM</span>
-                    </div>
-                    </div>
+    <Head title="Verify Email - KDM Stratus" />
+
+    <div class="min-h-screen bg-[#101113] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-blue-500 selection:text-white relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-900/20 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-0 left-20 w-72 h-72 bg-green-900/10 rounded-full blur-[80px]"></div>
+        </div>
+
+        <div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+            <div class="flex justify-center mb-6">
+                <img src="/images/logo.png" alt="KDM Logo" class="h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" onerror="this.style.display='none';" />
             </div>
-        </nav>
+            <h2 class="mt-2 text-center font-argentum text-3xl font-extrabold text-white uppercase tracking-widest">
+                Verify Identity
+            </h2>
+        </div>
 
-        <main class="flex-grow flex items-center justify-center p-6">
-            <div class="bg-[#222328] w-full max-w-xl rounded-2xl border border-gray-800 shadow-2xl p-8 md:p-12 text-center relative overflow-hidden">
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+            <div class="bg-[#18191c] py-8 px-6 shadow-2xl sm:rounded-xl border border-gray-800 text-center">
                 
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-blue-400"></div>
+                <svg class="mx-auto h-12 w-12 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
 
-                <h1 class="font-argentum text-3xl text-white uppercase mb-4 mt-2">Security Check</h1>
-                
-                <div class="mb-8 text-sm text-gray-400 leading-relaxed bg-[#18191c] p-6 rounded-lg border border-gray-700">
-                    Welcome to the KDM Stratus network. Before we can grant you access to the reservation grid, we need to verify your identity. <br><br>
-                    <span class="text-white font-bold tracking-wide">Please click the secure link we just sent to your email address.</span>
-                </div>
+                <p class="text-sm text-gray-400 font-bold tracking-widest uppercase leading-relaxed mb-6">
+                    Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you?
+                </p>
 
-                <div v-if="verificationLinkSent" class="animate-fade-in mb-8 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-green-400 text-sm font-bold tracking-wide flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                    A fresh verification link has been transmitted.
+                <div v-if="verificationLinkSent" class="mb-6 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-xs font-bold text-green-400 uppercase tracking-widest">
+                    A new verification link has been transmitted.
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-4">
                     <button type="submit" :disabled="form.processing" 
-                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-argentum uppercase tracking-widest py-4 rounded-lg text-sm transition transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer">
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 transition disabled:opacity-50">
                         Resend Verification Email
                     </button>
-
-                    <Link :href="route('logout')" method="post" as="button" 
-                        class="w-full bg-transparent border border-gray-700 hover:border-white text-gray-400 hover:text-white uppercase tracking-widest py-3 rounded-lg text-xs font-bold transition">
-                        Return to Log In
+                    
+                    <Link :href="route('logout')" method="post" as="button"
+                        class="w-full flex justify-center py-3 px-4 border border-gray-700 rounded-lg text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:bg-gray-800 transition">
+                        Log Out
                     </Link>
                 </form>
             </div>
-        </main>
-        
-        <footer class="bg-[#101113] py-6 text-center border-t border-gray-800">
-            <p class="text-gray-600 font-semibold text-sm tracking-wide">© 2026 KDM Esports Cafe. Secure SD-WAN Portal.</p>
-        </footer>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { useForm, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
     status: {
@@ -69,26 +64,7 @@ const submit = () => {
 const verificationLinkSent = computed(() => props.status === 'verification-link-sent');
 </script>
 
-<style>
-@font-face {
-    font-family: 'ArgentumNovus';
-    src: url('/fonts/ArgentumNovus-SemiBold.ttf') format('truetype');
-    font-weight: 600;
-}
-@font-face {
-    font-family: 'AZNUnified';
-    src: url('/fonts/AZNUnified-Oblique-Trial.otf') format('opentype');
-    font-weight: normal;
-    font-style: italic;
-}
+<style scoped>
+@font-face { font-family: 'ArgentumNovus'; src: url('/fonts/ArgentumNovus-SemiBold.ttf') format('truetype'); font-weight: 600; }
 .font-argentum { font-family: 'ArgentumNovus', sans-serif; }
-.font-azn { font-family: 'AZNUnified', sans-serif; }
-
-.animate-fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
-}
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
 </style>

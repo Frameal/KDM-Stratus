@@ -1,30 +1,33 @@
 <template>
-    <div class="min-h-screen bg-[#1c1d21] text-gray-200 font-sans selection:bg-white selection:text-black flex flex-col">
-        
-        <nav class="w-full z-50 bg-[#1c1d21] border-b border-gray-800 h-24 flex-shrink-0">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                <div class="flex justify-between items-center h-full">
-                    <a href="/" class="flex-shrink-0 flex items-center gap-4 hover:opacity-80 transition">
-                        <img src="/images/logo.png" alt="KDM Logo" class="h-16 w-auto object-contain" onerror="this.style.display='none';" />
-                        <span class="font-azn tracking-widest text-4xl text-white">KDM</span>
-                    </a>
-                    <div class="flex items-center space-x-6">
-                        <span class="text-gray-500 hidden md:inline">Already have an account?</span>
-                        <a href="/login" class="bg-transparent border border-gray-600 hover:border-white text-white px-6 py-2.5 rounded font-bold transition">
-                            Log In
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </nav>
+    <Head title="Create Account - KDM Stratus" />
 
-        <main class="flex-grow flex items-center justify-center p-6 my-8">
-            <div class="bg-[#222328] w-full max-w-2xl rounded-2xl border border-gray-800 shadow-2xl p-8 md:p-12">
+    <div class="min-h-screen bg-[#101113] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-blue-500 selection:text-white relative overflow-hidden">
+        
+        <!-- Premium Background Accents -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-900/20 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-0 left-20 w-72 h-72 bg-green-900/10 rounded-full blur-[80px]"></div>
+        </div>
+
+        <div class="sm:mx-auto sm:w-full sm:max-w-2xl relative z-10">
+            <!-- CLICKABLE LOGO -->
+            <div class="flex justify-center mb-6">
+                <a href="/" class="hover:scale-105 transition transform cursor-pointer">
+                    <img src="/images/logo.png" alt="KDM Logo" class="h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" onerror="this.style.display='none';" />
+                </a>
+            </div>
+            <h2 class="mt-2 text-center font-argentum text-3xl font-extrabold text-white uppercase tracking-widest">
+                Create Account
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-400 font-bold tracking-widest uppercase">
+                Join the KDM Stratus network
+            </p>
+        </div>
+
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl relative z-10">
+            <div class="bg-[#18191c] py-8 px-6 shadow-2xl sm:rounded-xl border border-gray-800 sm:px-10">
                 
-                <div class="text-center mb-10">
-                    <h1 class="font-argentum text-4xl text-white uppercase mb-2">Create Account</h1>
-                    <p class="text-gray-400">Join the KDM Stratus network to reserve your PC.</p>
-                </div>
+
 
                 <form @submit.prevent="submit" class="space-y-6">
                     
@@ -36,7 +39,7 @@
                                 <span v-else class="ml-2 text-red-500 text-lg leading-none">*</span>
                             </label>
                             <input v-model="form.first_name" type="text" required
-                                class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                                class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
                         </div>
                         <div class="relative">
                             <label class="flex items-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
@@ -45,7 +48,7 @@
                                 <span v-else class="ml-2 text-red-500 text-lg leading-none">*</span>
                             </label>
                             <input v-model="form.last_name" type="text" required
-                                class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                                class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
                         </div>
                     </div>
 
@@ -59,7 +62,7 @@
                                 <span v-else class="ml-2 text-red-500 text-lg leading-none">*</span>
                             </label>
                             <input v-model="form.username" type="text" required @blur="checkUsername" @input="resetUsernameCheck"
-                                class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                                class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                                 :class="{'border-red-500': usernameAvailable === false}">
                             
                             <div v-if="usernameAvailable === false" class="text-red-500 text-xs mt-1 font-bold">This username is already taken.</div>
@@ -74,7 +77,7 @@
                                 <span v-else class="ml-2 text-red-500 text-lg leading-none">*</span>
                             </label>
                             <input v-model="form.email" type="email" required placeholder="name@example.com" @blur="checkEmail" @input="resetEmailCheck"
-                                class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                                class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                                 :class="{'border-red-500': (!isEmailFormatValid && form.email.length > 0) || emailAvailable === false}">
                             
                             <div v-if="!isEmailFormatValid && form.email.length > 0" class="text-red-500 text-xs mt-1 font-bold">Please enter a valid email address (requires @).</div>
@@ -90,9 +93,9 @@
                                 <span v-else-if="phoneValid === false" class="ml-2 text-red-500 text-lg font-bold leading-none">!</span>
                                 <span v-else class="ml-2 text-red-500 text-lg leading-none">*</span>
                             </label>
-                            <div class="flex items-center bg-[#18191c] border border-gray-700 rounded-lg overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition"
+                            <div class="flex items-center bg-[#1c1d21] border border-gray-700 rounded-lg overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition"
                                  :class="{'border-red-500': contactInput.length > 0 && !phoneValid}">
-                                <span class="px-4 py-3 bg-gray-900 text-gray-500 border-r border-gray-700 font-bold select-none">+63</span>
+                                <span class="px-4 py-3 bg-[#101113] text-gray-500 border-r border-gray-700 font-bold select-none">+63</span>
                                 <input v-model="contactInput" @input="formatPhone" type="text" required placeholder="9123456789"
                                     class="w-full bg-transparent px-4 py-3 text-white focus:outline-none tracking-widest">
                             </div>
@@ -106,7 +109,7 @@
                                 <span v-else class="ml-2 text-red-500 text-lg leading-none">*</span>
                             </label>
                             <input v-model="form.dob" type="date" required :max="maxAllowedDate"
-                                class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition [color-scheme:dark]"
+                                class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition [color-scheme:dark]"
                                 :class="{'border-red-500': dobValid === false}">
                             <div v-if="dobValid === false" class="text-red-500 text-xs mt-1 font-bold">You must be at least 5 years old to register.</div>
                         </div>
@@ -120,7 +123,7 @@
                         </label>
                         <div class="relative">
                             <input v-model="form.password" :type="showPassword ? 'text' : 'password'" required
-                                class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition pr-12">
+                                class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition pr-12">
                             <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-3 text-gray-500 hover:text-white transition">
                                 <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
@@ -157,14 +160,15 @@
                             <span v-else-if="passwordsMatch === false" class="ml-2 text-red-500 text-lg font-bold leading-none">!</span>
                             <span v-else class="ml-2 text-red-500 text-lg leading-none">*</span>
                         </label>
-                        <input v-model="form.password_confirmation" :type="showConfirmPassword ? 'text' : 'password'" required
-                            class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition pr-12"
-                            :class="{'border-red-500': form.password_confirmation.length > 0 && !passwordsMatch}">
-                        
-                        <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="absolute right-4 top-10 text-gray-500 hover:text-white transition">
-                            <svg v-if="!showConfirmPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
-                        </button>
+                        <div class="relative">
+                            <input v-model="form.password_confirmation" :type="showConfirmPassword ? 'text' : 'password'" required
+                                class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition pr-12"
+                                :class="{'border-red-500': form.password_confirmation.length > 0 && !passwordsMatch}">
+                            <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="absolute right-4 top-3 text-gray-500 hover:text-white transition">
+                                <svg v-if="!showConfirmPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="pt-2">
@@ -177,13 +181,20 @@
 
                 </form>
             </div>
-        </main>
+            
+            <div class="mt-6 text-center">
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">
+                    Already have an account? 
+                    <a href="/login" class="text-blue-500 hover:text-blue-400 ml-1">Log in here</a>
+                </p>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
 
 const showPassword = ref(false);
@@ -248,7 +259,7 @@ const isEmailFormatValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form
 const emailValid = computed(() => (isEmailFormatValid.value && emailAvailable.value === true) ? true : (emailAvailable.value === false || (!isEmailFormatValid.value && form.email.length > 0) ? false : null));
 const phoneValid = computed(() => contactInput.value.length === 10 ? true : (contactInput.value.length > 0 ? false : null));
 
-// Strict DOB check to prevent bypassing HTML attributes
+// Strict DOB check
 const dobValid = computed(() => {
     if (!form.dob) return null;
     return form.dob <= maxAllowedDate.value ? true : false;
@@ -280,18 +291,11 @@ const submit = () => {
 };
 </script>
 
-<style>
+<style scoped>
 @font-face {
     font-family: 'ArgentumNovus';
     src: url('/fonts/ArgentumNovus-SemiBold.ttf') format('truetype');
     font-weight: 600;
 }
-@font-face {
-    font-family: 'AZNUnified';
-    src: url('/fonts/AZNUnified-Oblique-Trial.otf') format('opentype');
-    font-weight: normal;
-    font-style: italic;
-}
 .font-argentum { font-family: 'ArgentumNovus', sans-serif; }
-.font-azn { font-family: 'AZNUnified', sans-serif; }
 </style>

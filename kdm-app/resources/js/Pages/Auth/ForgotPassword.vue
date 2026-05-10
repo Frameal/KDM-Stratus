@@ -1,59 +1,57 @@
 <template>
-    <div class="min-h-screen bg-[#1c1d21] text-gray-200 font-sans flex flex-col">
+    <Head title="Forgot Password - KDM Stratus" />
+
+    <div class="min-h-screen bg-[#101113] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-blue-500 selection:text-white relative overflow-hidden">
         
-        <nav class="w-full z-50 bg-[#1c1d21] border-b border-gray-800 h-24 flex-shrink-0 shadow-md">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                <div class="flex justify-between items-center h-full">
-                    <a href="/" class="flex-shrink-0 flex items-center gap-4 hover:opacity-80 transition">
-                        <img src="/images/logo.png" alt="KDM Logo" class="h-16 w-auto object-contain" onerror="this.style.display='none';" />
-                        <span class="font-azn tracking-widest text-4xl text-white">KDM</span>
-                    </a>
-                </div>
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-900/20 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-0 left-20 w-72 h-72 bg-green-900/10 rounded-full blur-[80px]"></div>
+        </div>
+
+        <div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+            <div class="flex justify-center mb-6">
+                <img src="/images/logo.png" alt="KDM Logo" class="h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" onerror="this.style.display='none';" />
             </div>
-        </nav>
+            <h2 class="mt-2 text-center font-argentum text-3xl font-extrabold text-white uppercase tracking-widest">
+                System Recovery
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-400 font-bold tracking-widest uppercase px-4">
+                Forgot your password? Let us know your email address and we will email you a password reset link.
+            </p>
+        </div>
 
-        <main class="flex-grow flex items-center justify-center p-6">
-            <div class="bg-[#222328] w-full max-w-lg rounded-2xl border border-gray-800 shadow-2xl p-8 md:p-12 relative overflow-hidden">
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+            <div class="bg-[#18191c] py-8 px-4 shadow-2xl sm:rounded-xl border border-gray-800 sm:px-10">
                 
-                <div class="absolute top-0 left-0 w-full h-1 bg-blue-600"></div>
-
-                <div class="text-center mb-8">
-                    <h1 class="font-argentum text-3xl text-white uppercase mb-2">Password Reset</h1>
-                    <p class="text-sm text-gray-400">
-                        Forgot your password? No problem. Just let us know your email address and we will email you a secure password reset link.
-                    </p>
-                </div>
-
-                <div v-if="status" class="mb-6 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-green-400 text-sm font-bold text-center">
+                <div v-if="status" class="mb-6 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-sm font-bold text-green-400 uppercase tracking-widest text-center">
                     {{ status }}
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-6">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Email Address</label>
-                        <input v-model="form.email" type="email" required autofocus
-                            class="w-full bg-[#18191c] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
-                        <div v-if="form.errors.email" class="text-red-500 text-xs mt-1 font-bold">{{ form.errors.email }}</div>
+                        <label for="email" class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Email Address</label>
+                        <input id="email" type="email" v-model="form.email" required autofocus
+                            class="appearance-none block w-full px-4 py-3 border border-gray-700 rounded-lg shadow-sm placeholder-gray-500 bg-[#1c1d21] text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition font-bold" />
+                        <div v-if="form.errors.email" class="mt-2 text-xs text-red-500 font-bold">{{ form.errors.email }}</div>
                     </div>
 
-                    <button type="submit" :disabled="form.processing" 
-                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-argentum uppercase tracking-widest py-4 rounded-lg text-sm transition transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer">
-                        Email Password Reset Link
-                    </button>
-
-                    <div class="text-center mt-4">
-                        <a :href="route('login')" class="text-gray-500 hover:text-white text-xs uppercase tracking-widest underline transition">
-                            Return to Login
-                        </a>
+                    <div class="flex items-center justify-between pt-2">
+                        <Link :href="route('login')" class="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-widest transition">
+                            &larr; Back to Login
+                        </Link>
+                        <button type="submit" :disabled="form.processing" 
+                            class="flex justify-center py-3 px-6 border border-transparent rounded-lg shadow-lg text-sm font-bold uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition disabled:opacity-50">
+                            Email Reset Link
+                        </button>
                     </div>
                 </form>
             </div>
-        </main>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
     status: {
@@ -70,18 +68,7 @@ const submit = () => {
 };
 </script>
 
-<style>
-@font-face {
-    font-family: 'ArgentumNovus';
-    src: url('/fonts/ArgentumNovus-SemiBold.ttf') format('truetype');
-    font-weight: 600;
-}
-@font-face {
-    font-family: 'AZNUnified';
-    src: url('/fonts/AZNUnified-Oblique-Trial.otf') format('opentype');
-    font-weight: normal;
-    font-style: italic;
-}
+<style scoped>
+@font-face { font-family: 'ArgentumNovus'; src: url('/fonts/ArgentumNovus-SemiBold.ttf') format('truetype'); font-weight: 600; }
 .font-argentum { font-family: 'ArgentumNovus', sans-serif; }
-.font-azn { font-family: 'AZNUnified', sans-serif; }
 </style>

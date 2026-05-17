@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 
 // Make sure pc is clear
+// Make sure pc is clear and temp accounts are purged
 function autoClearExpiredReservations() {
     $expiredSessions = \App\Models\Reservation::where('status', 'active')
         ->where('expires_at', '<=', now())
@@ -20,6 +21,16 @@ function autoClearExpiredReservations() {
         $session->update(['status' => 'expired']);
         \App\Models\Pc::where('id', $session->pc_id)->update(['status' => 'free']);
     }
+
+    // NEW: Auto-Ban Temporary Walk-In Accounts after 20 minutes
+    // We ban them instead of deleting to ensure the ₱5 revenue stays in the ledger!
+    \App\Models\User::where('email', 'LIKE', '%@temp.kdm.local')
+        ->where('created_at', '<=', now()->subMinutes(20))
+        ->where('is_banned', false)
+        ->update([
+            'is_banned' => true, 
+            'password' => \Illuminate\Support\Facades\Hash::make('LOCKED_ACCOUNT')
+        ]);
 }
 
 
@@ -374,6 +385,49 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 'action' => 'Data Export', 'details' => $request->details]);
         return response()->json(['success' => true]);
     })->name('log.export');
+
+// NEW: GENERATE TEMPORARY WALK-IN ACCOUNT (SILENT BYPASS)
+    Route::post('/users/temporary', function () {
+        $pin = rand(10000, 99999); 
+        $username = 'walkin_' . rand(1000, 9999);
+        
+        $user = new \App\Models\User();
+        
+        // forceFill bypasses the $fillable array. 
+        // saveQuietly() inserts into the DB without triggering your custom OTP/Email Listeners!
+        $user->forceFill([
+            'username' => $username,
+            'email' => $username . '@temp.kdm.local',
+            'password' => \Illuminate\Support\Facades\Hash::make((string)$pin),
+            'role' => 'customer',
+            'first_name' => 'Walk-in',
+            'last_name' => 'Customer',
+            'contact_number' => 'N/A',
+            'email_verified_at' => now(), 
+            'balance' => 5.00 
+        ])->saveQuietly();
+
+        // Inject the physical ₱5 cash into the digital ledger
+        \App\Models\Transaction::create([
+            'user_id' => $user->id,
+            'reference_id' => 'CASH-' . Auth::user()->branch_id . '-TEMP-' . time(),
+            'amount' => 5.00,
+            'status' => 'paid'
+        ]);
+
+        // Log the action securely
+        \App\Models\AuditLog::create([
+            'user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 
+            'action' => 'Walk-In Creation',
+            'details' => "Generated temporary account {$username} and collected ₱5.00."
+        ]);
+
+        return response()->json([
+            'username' => $username,
+            'password' => $pin
+        ]);
+    })->name('users.temporary');
+
 });
 
 // --------------------------------------------------------
@@ -910,5 +964,147 @@ Route::post('/reserve/expire', function (Illuminate\Http\Request $request) {
     
     return response()->json(['status' => 'success']);
 })->middleware('auth')->name('reserve.expire');
+
+
+
+// --------------------------------------------------------
+// HARDWARE TIMER API (For the Python Client Scripts)
+// --------------------------------------------------------
+Route::get('/api/terminal-check/{pc_number}', function ($pc_number) {
+    $pc = \App\Models\Pc::where('pc_number', $pc_number)->first();
+    
+    // Fail-safe: If the PC doesn't exist, keep it locked.
+    if (!$pc) return response()->json(['action' => 'lock', 'reason' => 'PC Not Found']);
+
+    // Check if the PC currently has an active reservation
+    if ($pc->status === 'reserved' || $pc->status === 'occupied') {
+        $reservation = \App\Models\Reservation::where('pc_id', $pc->id)
+            ->where('status', 'active')
+            ->first();
+
+        // If a reservation exists AND time has not run out
+        if ($reservation && $reservation->expires_at > now()) {
+            return response()->json([
+                'action' => 'unlock',
+                'expires_at' => $reservation->expires_at,
+                'user' => $reservation->user->username
+            ]);
+        }
+
+        // If time ran out between checks, forcefully expire it right now
+        if ($reservation && $reservation->expires_at <= now()) {
+            $reservation->update(['status' => 'expired']);
+            $pc->update(['status' => 'free']);
+        }
+    }
+
+    // Default state: Lock the screen.
+    return response()->json(['action' => 'lock', 'reason' => 'No active time']);
+});
+
+// --------------------------------------------------------
+// HARDWARE CLIENT API (For Python Desktop App)
+// --------------------------------------------------------
+
+// 1. Hardware Login Endpoint (Pay-As-You-Go Logic)
+Route::post('/api/terminal/login', function (Illuminate\Http\Request $request) {
+    $request->validate([
+        'pc_number' => 'required|string',
+        'username' => 'required|string',
+        'password' => 'required|string'
+    ]);
+
+    $user = \App\Models\User::where('username', $request->username)->first();
+    if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+        return response()->json(['success' => false, 'message' => 'Invalid credentials.']);
+    }
+
+    $pc = \App\Models\Pc::where('pc_number', $request->pc_number)->first();
+    if (!$pc || $pc->status !== 'free') {
+        return response()->json(['success' => false, 'message' => 'Terminal unavailable.']);
+    }
+
+    // Calculate their Maximum Time based on the 1-Hour Rate
+    $hourlyRate = (float) (\App\Models\Setting::where('key', 'price_60m')->value('value') ?? 25.00);
+    $ratePerMinute = $hourlyRate / 60;
+
+    if ($user->balance < $ratePerMinute) {
+        return response()->json(['success' => false, 'message' => 'Insufficient wallet balance.']);
+    }
+
+    // Calculate maximum minutes they can play before their wallet hits 0
+    $maxMinutes = floor($user->balance / $ratePerMinute);
+
+    $pc->update(['status' => 'occupied']);
+
+    // We create the session, but we DO NOT deduct the money yet!
+    $reservation = \App\Models\Reservation::create([
+        'user_id' => $user->id,
+        'pc_id' => $pc->id,
+        'branch_id' => $pc->branch_id,
+        'fee_paid' => 0, 
+        'duration_minutes' => $maxMinutes,
+        'expires_at' => now()->addMinutes($maxMinutes),
+        'status' => 'active'
+    ]);
+
+    return response()->json([
+        'success' => true, 
+        'expires_at' => $reservation->expires_at,
+        'user' => $user->username
+    ]);
+});
+
+// 2. Hardware Sync & Auto-Logout Endpoint
+Route::get('/api/terminal/sync/{pc_number}', function ($pc_number) {
+    $pc = \App\Models\Pc::where('pc_number', $pc_number)->first();
+    if (!$pc) return response()->json(['action' => 'lock']);
+
+    if ($pc->status === 'occupied' || $pc->status === 'reserved') {
+        $reservation = \App\Models\Reservation::where('pc_id', $pc->id)->where('status', 'active')->first();
+        
+        if ($reservation && $reservation->expires_at > now()) {
+            return response()->json(['action' => 'unlock', 'expires_at' => $reservation->expires_at]);
+        }
+
+        // Wallet is empty! Force expire and charge them.
+        if ($reservation && $reservation->expires_at <= now()) {
+            $user = \App\Models\User::find($reservation->user_id);
+            $user->update(['balance' => 0]); // Wallet is emptied
+            
+            $reservation->update(['status' => 'completed', 'fee_paid' => ($reservation->duration_minutes * (($hourlyRate ?? 25)/60))]);
+            $pc->update(['status' => 'free']);
+        }
+    }
+    return response()->json(['action' => 'lock']);
+});
+
+// 3. Early Logout Endpoint (Charge only for time used)
+Route::post('/api/terminal/logout', function (Illuminate\Http\Request $request) {
+    $pc = \App\Models\Pc::where('pc_number', $request->pc_number)->first();
+    if ($pc) {
+        $reservation = \App\Models\Reservation::where('pc_id', $pc->id)->where('status', 'active')->first();
+        if ($reservation) {
+            // Calculate EXACT time used
+            $minutesUsed = now()->diffInMinutes($reservation->created_at);
+            if ($minutesUsed < 1) $minutesUsed = 1; // Minimum 1 minute charge
+
+            $hourlyRate = (float) (\App\Models\Setting::where('key', 'price_60m')->value('value') ?? 25.00);
+            $ratePerMinute = $hourlyRate / 60;
+            $cost = $minutesUsed * $ratePerMinute;
+
+            // Deduct exact cost from wallet
+            $user = \App\Models\User::find($reservation->user_id);
+            if ($user) {
+                $user->decrement('balance', $cost);
+            }
+
+            $reservation->update(['status' => 'completed', 'fee_paid' => $cost, 'duration_minutes' => $minutesUsed]);
+        }
+        $pc->update(['status' => 'free']);
+    }
+    return response()->json(['success' => true]);
+});
+
 
 require __DIR__.'/auth.php';

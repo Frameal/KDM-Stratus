@@ -11,8 +11,14 @@
         </transition>
 
         <div class="bg-[#18191c] rounded-2xl border border-gray-800 shadow-2xl overflow-hidden">
-            <div class="px-6 py-5 border-b border-gray-800 bg-[#222328]">
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#222328] flex justify-between items-center">
                 <h3 class="font-argentum text-lg text-white uppercase tracking-widest">Registered Network Accounts</h3>
+                
+                <button @click="generateWalkIn" :disabled="isGeneratingTemp" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg uppercase tracking-widest transition shadow-[0_0_15px_rgba(37,99,235,0.4)] text-[10px] flex items-center gap-2 disabled:opacity-50">
+                    <svg v-if="!isGeneratingTemp" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <svg v-else class="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Issue Walk-In Account (15m)
+                </button>
             </div>
             
             <div class="p-6 overflow-x-auto">
@@ -27,12 +33,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="user in customers" :key="user.id" class="border-b border-gray-800/50 hover:bg-[#222328] transition">
-                            <td class="py-4 text-blue-400 font-bold text-xs">@{{ user.username }}</td>
+                        <tr v-for="user in customers" :key="user.id" class="border-b border-gray-800/50 hover:bg-[#222328] transition" :class="user.first_name === 'Walk-in' ? 'bg-blue-900/10' : ''">
+                            <td class="py-4 text-blue-400 font-bold text-xs">
+                                @{{ user.username }}
+                                <span v-if="user.first_name === 'Walk-in'" class="ml-2 bg-blue-600 text-white px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest">TEMP</span>
+                            </td>
                             <td class="py-4 text-gray-300 text-xs">{{ user.first_name }} {{ user.last_name }}</td>
                             <td class="py-4 text-green-400 font-mono font-bold">₱{{ Number(user.balance).toFixed(2) }}</td>
                             <td class="py-4">
-                                <span v-if="user.is_banned" class="bg-red-900/30 text-red-500 border border-red-500/30 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest">Banned</span>
+                                <span v-if="user.is_banned" class="bg-red-900/30 text-red-500 border border-red-500/30 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest">Locked</span>
                                 <span v-else class="bg-green-900/30 text-green-500 border border-green-500/30 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest">Active</span>
                             </td>
                             <td class="py-4 text-right flex justify-end gap-2">
@@ -50,6 +59,29 @@
     </AdminLayout>
 
     <Teleport to="body">
+        
+        <div v-if="tempCredentials" class="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md">
+            <div class="bg-[#18191c] border border-blue-500/50 rounded-2xl w-full max-w-sm overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.2)] relative">
+                <div class="bg-blue-900/20 px-6 py-4 border-b border-blue-900/50 text-center">
+                    <h3 class="font-argentum text-xl text-blue-400 uppercase tracking-widest">Walk-In Generated</h3>
+                </div>
+                <div class="p-8 text-center space-y-6">
+                    <div class="bg-[#101113] border border-gray-700 p-4 rounded-xl">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Temporary Username</p>
+                        <p class="text-2xl font-bold text-white tracking-widest">{{ tempCredentials.username }}</p>
+                    </div>
+                    <div class="bg-[#101113] border border-gray-700 p-4 rounded-xl">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Access PIN (Password)</p>
+                        <p class="text-4xl font-mono font-bold text-green-400 tracking-widest">{{ tempCredentials.password }}</p>
+                    </div>
+                    <p class="text-[9px] text-orange-400 font-bold uppercase tracking-widest mt-4">This account contains ₱5.00 and will self-destruct in 20 minutes.</p>
+                    <button @click="tempCredentials = null" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-lg uppercase tracking-widest transition text-xs shadow-lg mt-4">
+                        Dismiss & Return
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div v-if="showViewModal" class="fixed inset-0 z-[999] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm" @click.self="showViewModal = false">
             <div class="bg-[#18191c] border border-gray-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
                 <div class="bg-[#101113] px-6 py-4 border-b border-gray-800 flex justify-between items-center">
@@ -98,6 +130,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
+import axios from 'axios';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({ customers: Array });
@@ -108,6 +141,23 @@ const showViewModal = ref(false);
 const showBalanceModal = ref(false);
 const showBanModal = ref(false);
 const balanceForm = useForm({ amount: null, type: '' });
+
+// WALK-IN STATE
+const isGeneratingTemp = ref(false);
+const tempCredentials = ref(null);
+
+const generateWalkIn = async () => {
+    isGeneratingTemp.value = true;
+    try {
+        const response = await axios.post(route('branch.users.temporary'));
+        tempCredentials.value = response.data; // Show the massive popup
+        router.reload({ only: ['customers'] }); // Silently refresh the list behind it
+    } catch (error) {
+        toast.value = { show: true, message: "Failed to generate account." };
+        setTimeout(() => toast.value.show=false, 4000);
+    }
+    isGeneratingTemp.value = false;
+};
 
 const openViewModal = (user) => { activeUser.value = user; showViewModal.value = true; };
 const openBalanceModal = (user) => { activeUser.value = user; balanceForm.amount = null; showBalanceModal.value = true; };

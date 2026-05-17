@@ -12,6 +12,7 @@ class Branch extends Model
     protected $fillable = [
         'name',
         'address',
+        'total_pcs',
     ];
 
     // THIS IS THE MISSING PIECE

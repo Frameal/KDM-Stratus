@@ -29,25 +29,20 @@ class RegisteredUserController extends Controller
      *
      * @throws ValidationException
      */
-public function store(Request $request): RedirectResponse
+public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:'.User::class,
-            // Enforces strict email formatting and uniqueness
-            'email' => 'required|string|email:rfc,dns|max:255|unique:'.User::class,
-            // Enforces Philippine mobile number format starting with +639
-            'contact_number' => ['required', 'string', 'regex:/^\+639\d{9}$/'],
-            'dob' => 'required|date',
-            // Enforces enterprise password security
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
-        ], [
-            // Custom error messages for specific validations
-            'contact_number.regex' => 'The contact number must follow the format +639XXXXXXXXX.',
-            'username.unique' => 'This username is already taken.',
-            'email.unique' => 'This email is already registered.'
+            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'contact_number' => 'required|string|max:15',
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'agreed' => 'accepted', // Validates the privacy checkbox
         ]);
+
+        // Generate a 10-character alphanumeric recovery code (e.g., KDM-A8B9C2)
+        $plainRecoveryCode = 'KDM-' . strtoupper(\Illuminate\Support\Str::random(8));
 
         $user = User::create([
             'first_name' => $request->first_name,
@@ -55,14 +50,19 @@ public function store(Request $request): RedirectResponse
             'username' => $request->username,
             'email' => $request->email,
             'contact_number' => $request->contact_number,
-            'dob' => $request->dob,
             'password' => Hash::make($request->password),
+            'role' => 'customer',
+            'recovery_code' => Hash::make($plainRecoveryCode), // Securely hash it in DB
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // Save the plain text code to the session just once so we can show it to the user
+        $request->session()->put('recovery_code_plain', $plainRecoveryCode);
+
+        // Divert to the recovery code screen
+        return redirect()->route('register.recovery');
     }
 }

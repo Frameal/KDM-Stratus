@@ -3,14 +3,12 @@
 
     <div class="min-h-screen bg-[#101113] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-blue-500 selection:text-white relative overflow-hidden">
         
-        <!-- Premium Background Accents -->
         <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-900/20 rounded-full blur-[100px]"></div>
             <div class="absolute bottom-0 left-20 w-72 h-72 bg-green-900/10 rounded-full blur-[80px]"></div>
         </div>
 
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl relative z-10">
-            <!-- CLICKABLE LOGO -->
             <div class="flex justify-center mb-6">
                 <a href="/" class="hover:scale-105 transition transform cursor-pointer">
                     <img src="/images/logo.png" alt="KDM Logo" class="h-20 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" onerror="this.style.display='none';" />
@@ -27,8 +25,6 @@
         <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl relative z-10">
             <div class="bg-[#18191c] py-8 px-6 shadow-2xl sm:rounded-xl border border-gray-800 sm:px-10">
                 
-
-
                 <form @submit.prevent="submit" class="space-y-6">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -80,7 +76,7 @@
                                 class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                                 :class="{'border-red-500': (!isEmailFormatValid && form.email.length > 0) || emailAvailable === false}">
                             
-                            <div v-if="!isEmailFormatValid && form.email.length > 0" class="text-red-500 text-xs mt-1 font-bold">Please enter a valid email address (requires @).</div>
+                            <div v-if="!isEmailFormatValid && form.email.length > 0" class="text-red-500 text-xs mt-1 font-bold">Please enter a valid email address.</div>
                             <div v-else-if="emailAvailable === false" class="text-red-500 text-xs mt-1 font-bold">This email is already registered.</div>
                         </div>
                     </div>
@@ -111,7 +107,7 @@
                             <input v-model="form.dob" type="date" required :max="maxAllowedDate"
                                 class="w-full bg-[#1c1d21] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition [color-scheme:dark]"
                                 :class="{'border-red-500': dobValid === false}">
-                            <div v-if="dobValid === false" class="text-red-500 text-xs mt-1 font-bold">You must be at least 5 years old to register.</div>
+                            <div v-if="dobValid === false" class="text-red-500 text-xs mt-1 font-bold">You must be at least 5 years old.</div>
                         </div>
                     </div>
 
@@ -171,6 +167,22 @@
                         </div>
                     </div>
 
+                    <div class="flex items-center mt-6 p-4 border border-gray-700 rounded-lg transition-colors" :class="{'bg-green-900/20 border-green-500/50': form.agreed, 'bg-[#222328]': !form.agreed}">
+                        <div class="flex-shrink-0 relative">
+                            <div v-if="form.agreed" class="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_10px_rgba(34,197,94,0.5)]">
+                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div v-else class="h-5 w-5 rounded border-2 border-gray-500 bg-[#1c1d21]"></div>
+                        </div>
+                        <div class="ml-3 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            <button type="button" @click="showPrivacyModal = true" class="text-blue-400 hover:text-blue-300 transition underline decoration-blue-500/50 underline-offset-4">
+                                Read Data & Privacy Agreement
+                            </button>
+                            <span class="ml-1 text-gray-500">(Required)</span>
+                        </div>
+                    </div>
+                    <div v-if="form.errors.agreed" class="text-xs text-red-500 font-bold mt-1">{{ form.errors.agreed }}</div>
+
                     <div class="pt-2">
                         <button type="submit" :disabled="form.processing || !isFormFullyValid" 
                             class="w-full font-argentum uppercase tracking-widest py-4 rounded-lg text-lg transition-all duration-300"
@@ -189,6 +201,48 @@
                 </p>
             </div>
         </div>
+
+        <div v-if="showPrivacyModal" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-[#18191c] border border-gray-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+                
+                <div class="bg-[#222328] px-6 py-4 border-b border-gray-800 flex justify-between items-center">
+                    <h3 class="font-argentum text-lg text-white uppercase tracking-widest">Data & Privacy</h3>
+                    <div class="flex gap-3">
+                        <button type="button" @click="showPrivacyModal = false" class="px-4 py-2 text-[10px] font-bold text-gray-400 hover:text-white uppercase transition tracking-widest">Cancel</button>
+                        <button type="button" @click="acceptAgreement" :disabled="!hasReachedBottom" class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-6 py-2 rounded uppercase tracking-widest transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            {{ hasReachedBottom ? 'I Agree' : 'Scroll to Agree' }}
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-sm text-gray-400 leading-relaxed" @scroll="checkScroll">
+                    <p class="text-white font-bold uppercase tracking-widest mb-4 border-b border-gray-800 pb-2">KDM Stratus Network - User Agreement</p>
+                    
+                    <p>By registering for an account on the KDM Stratus Network, you agree to the collection, processing, and storage of your personal and telemetry data as outlined below.</p>
+                    
+                    <p class="font-bold text-gray-300">1. Data Collection</p>
+                    <p>We collect essential identification data including your full name, email address, username, and contact number. We also record network activity, terminal reservation history, session durations, and wallet transaction logs.</p>
+                    
+                    <p class="font-bold text-gray-300">2. Usage of Data</p>
+                    <p>Your data is strictly utilized for core operational purposes: authenticating terminal access, calculating reservation and usage fees, verifying account ownership, and providing localized branch support.</p>
+                    
+                    <p class="font-bold text-gray-300">3. Network Telemetry</p>
+                    <p>To maintain infrastructure health, KDM Stratus actively monitors the physical status and software activity of the terminal you occupy. This data is transmitted to our Executive HQ for capacity planning.</p>
+                    
+                    <p class="font-bold text-gray-300">4. Data Protection & Deletion</p>
+                    <p>Your credentials are cryptographically secured. We do not sell your data to third-party advertisers. You may submit a request to your local Branch Manager to permanently delete your account and wipe your network history.</p>
+
+                    <p class="font-bold text-gray-300">5. Multi-Factor Authentication</p>
+                    <p>You acknowledge that KDM Stratus employs Email OTPs and Recovery Codes to secure your digital wallet and terminal access. It is your responsibility to safely secure these secondary backup codes immediately upon account generation.</p>
+
+                    <div class="mt-8 p-4 bg-blue-900/20 border border-blue-500/30 rounded text-center">
+                        <p class="text-blue-400 font-bold uppercase tracking-widest text-xs animate-pulse">End of Agreement. You may now click 'I Agree' above.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -201,6 +255,10 @@ const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const contactInput = ref('');
 
+// MODAL & SCROLL STATE
+const showPrivacyModal = ref(false);
+const hasReachedBottom = ref(false);
+
 const form = useForm({
     first_name: '',
     last_name: '',
@@ -210,9 +268,24 @@ const form = useForm({
     dob: '',
     password: '',
     password_confirmation: '',
+    agreed: false, // Added validation field
 });
 
-// Dynamic Max Date Calculation (Must be at least 5 years old)
+// SCROLL TRACKER FIX
+const checkScroll = (e) => {
+    const el = e.target;
+    // Using Math.ceil to fix fractional pixel rounding issues
+    if (Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight - 5) {
+        hasReachedBottom.value = true;
+    }
+};
+
+const acceptAgreement = () => {
+    form.agreed = true;
+    showPrivacyModal.value = false;
+};
+
+// Dynamic Max Date Calculation
 const calculateMaxDate = () => {
     const today = new Date();
     today.setFullYear(today.getFullYear() - 5);
@@ -259,7 +332,6 @@ const isEmailFormatValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form
 const emailValid = computed(() => (isEmailFormatValid.value && emailAvailable.value === true) ? true : (emailAvailable.value === false || (!isEmailFormatValid.value && form.email.length > 0) ? false : null));
 const phoneValid = computed(() => contactInput.value.length === 10 ? true : (contactInput.value.length > 0 ? false : null));
 
-// Strict DOB check
 const dobValid = computed(() => {
     if (!form.dob) return null;
     return form.dob <= maxAllowedDate.value ? true : false;
@@ -272,6 +344,7 @@ const passwordSymbol = computed(() => /[!@#$%^&*(),.?":{}|<>]/.test(form.passwor
 const isPasswordValid = computed(() => passwordLength.value && passwordUpper.value && passwordNumber.value && passwordSymbol.value ? true : (form.password.length > 0 ? false : null));
 const passwordsMatch = computed(() => (form.password_confirmation.length > 0 && form.password === form.password_confirmation) ? true : (form.password_confirmation.length > 0 ? false : null));
 
+// FULL FORM VALIDATION INCLUDING AGREEMENT
 const isFormFullyValid = computed(() => {
     return firstNameValid.value === true && 
            lastNameValid.value === true && 
@@ -280,7 +353,8 @@ const isFormFullyValid = computed(() => {
            phoneValid.value === true &&
            dobValid.value === true &&
            isPasswordValid.value === true && 
-           passwordsMatch.value === true;
+           passwordsMatch.value === true &&
+           form.agreed === true; // Requires the checkbox to be checked!
 });
 
 const submit = () => {
@@ -298,4 +372,10 @@ const submit = () => {
     font-weight: 600;
 }
 .font-argentum { font-family: 'ArgentumNovus', sans-serif; }
+
+/* Custom Scrollbar for the Privacy Text */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 </style>

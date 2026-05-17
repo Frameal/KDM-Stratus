@@ -22,11 +22,15 @@ protected $fillable = [
         'username',
         'email',
         'contact_number',
-        'dob',
         'password',
         'role',
         'branch_id',
         'balance',
+        'email_otp',
+        'email_otp_expiry',
+        'recovery_code', // Add this line
+        'contact_number', // Make sure this is here!
+        'is_banned',      // Make sure this is here!
     ];
 
     /**

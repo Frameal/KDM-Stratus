@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\LoginOtpMail;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -27,16 +29,35 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // BRUTE FORCE PROTECTION: Define unique throttle keys based on IP and Username
+        $throttleKeyShort = Str::transliterate(Str::lower($request->username).'|'.$request->ip().'|short');
+        $throttleKeyLong = Str::transliterate(Str::lower($request->username).'|'.$request->ip().'|long');
+
+        // Check 24-Hour Lock (8 attempts)
+        if (RateLimiter::tooManyAttempts($throttleKeyLong, 8)) {
+            return back()->withErrors(['username' => 'SECURITY LOCKOUT: Maximum attempts reached. Account locked for 24 hours.']);
+        }
+
+        // Check 1-Minute Lock (3 attempts)
+        if (RateLimiter::tooManyAttempts($throttleKeyShort, 3)) {
+            $seconds = RateLimiter::availableIn($throttleKeyShort);
+            return back()->withErrors(['username' => "Too many failed attempts. Please wait {$seconds} seconds."]);
+        }
+
+        // Find the user by username or email
         $user = \App\Models\User::where('username', $request->username)
             ->orWhere('email', $request->username)->first();
 
-        if (!$user) {
-            return back()->withErrors(['username' => 'Account not found. Please check your username or register.']);
+        // Failed Login Trigger: Add to the rate limiter penalties
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            RateLimiter::hit($throttleKeyShort, 60); // 1 minute penalty
+            RateLimiter::hit($throttleKeyLong, 86400); // 24 hour penalty
+            return back()->withErrors(['username' => 'Account not found or incorrect password.']);
         }
 
-        if (!\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
-            return back()->withErrors(['password' => 'Incorrect password.']);
-        }
+        // Successful Login: Clear the penalties!
+        RateLimiter::clear($throttleKeyShort);
+        RateLimiter::clear($throttleKeyLong);
 
         // ONLY apply Email OTP to Customers
         if ($user->role === 'customer') {

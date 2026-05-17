@@ -45,6 +45,15 @@
                     <div class="relative flex justify-center text-sm"><span class="px-2 bg-[#18191c] text-gray-500 font-bold uppercase tracking-widest text-xs">Or authenticate manually</span></div>
                 </div>
 
+
+                <div v-if="status" class="mb-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg text-center">
+                    <p class="text-xs font-bold text-green-400 uppercase tracking-widest">{{ status }}</p>
+                </div>
+                <div v-if="Object.keys(form.errors).length > 0" class="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg text-center">
+                    <p class="text-xs font-bold text-red-400 uppercase tracking-widest">{{ form.errors.username || form.errors.password }}</p>
+                </div>
+
+
                 <form v-if="loginStep === 1" @submit.prevent="submitCredentials" class="space-y-6">
                     <div>
                         <label for="username" class="block text-xs font-bold text-gray-500 uppercase tracking-widest">Username or Email</label>

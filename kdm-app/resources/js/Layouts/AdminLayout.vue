@@ -7,23 +7,32 @@
                 <span class="font-azn tracking-widest text-xl text-white mt-1">KDM Admin</span>
             </div>
 
-            <nav v-if="$page.props.auth.user.role === 'manager'" class="flex-1 px-4 space-y-2 overflow-y-auto mt-6 custom-scrollbar">
+            <nav v-if="$page.props.auth.user.role === 'manager' || $page.props.auth.user.role === 'branch_manager'" class="flex-1 px-4 space-y-2 overflow-y-auto mt-6 custom-scrollbar">
                 <a :href="route('branch.dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Overview</a>
                 <a :href="route('branch.terminals')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/terminals') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Terminal Grid</a>
                 <a :href="route('branch.reservations')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/reservations') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Reservations</a>
+                <a :href="route('branch.transactions')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/transactions') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Transactions</a>
+                <a :href="route('branch.users')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/users') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Customers & Cash</a>
                 <a :href="route('branch.feedback')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/manager/feedback') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Local Feedback</a>
+                <a :href="route('branch.logs')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition border border-gray-700 mt-4" :class="$page.url.startsWith('/manager/logs') ? 'bg-blue-900/50 text-blue-400' : 'text-gray-500 hover:text-white hover:bg-[#1c1d21]'">Audit Logs</a>
             </nav>
 
-            <nav v-if="$page.props.auth.user.role === 'hq'" class="flex-1 px-4 space-y-2 overflow-y-auto mt-6 custom-scrollbar">
+            <nav v-if="$page.props.auth.user.role === 'hq' || $page.props.auth.user.role === 'hq_admin'" class="flex-1 px-4 space-y-2 overflow-y-auto mt-6 custom-scrollbar">
                 <a :href="route('hq.dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Global Matrix</a>
                 <a :href="route('hq.branches')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/branches') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Branch Ops</a>
                 <a :href="route('hq.users')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/users') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Enterprise Users</a>
                 <a :href="route('hq.reports')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/reports') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Global Reports</a>
+                <a :href="route('hq.transactions')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/transactions') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Transactions</a>
+                <a :href="route('hq.pricing')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/pricing') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">Pricing Matrix</a>
+                <a :href="route('hq.backups')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition" :class="$page.url.startsWith('/hq/backups') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#1c1d21]'">GCS Backups</a>
+                <a :href="route('hq.logs')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition border border-gray-700 mt-4" :class="$page.url.startsWith('/hq/logs') ? 'bg-blue-900/50 text-blue-400' : 'text-gray-500 hover:text-white hover:bg-[#1c1d21]'">Global Audit Logs</a>
             </nav>
 
             <div class="p-4 border-t border-gray-800">
                 <div class="bg-[#1c1d21] rounded-lg p-4 shadow-inner">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{{ $page.props.auth.user.role === 'hq' ? 'Executive Admin' : 'Branch Manager' }}</p>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        {{ $page.props.auth.user.role === 'hq' || $page.props.auth.user.role === 'hq_admin' ? 'Executive Admin' : 'Branch Manager' }}
+                    </p>
                     <p class="text-sm font-bold text-white truncate mt-1">{{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</p>
                     <a href="/force-logout" class="mt-4 block text-center text-xs font-bold bg-red-900/20 text-red-400 hover:text-white hover:bg-red-600 border border-red-500/30 py-2.5 rounded transition uppercase tracking-widest">Secure Logout</a>
                 </div>

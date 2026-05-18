@@ -21,7 +21,7 @@ class OAuthController extends Controller
 public function handleGoogleCallback()
     {
         try {
-            $googleUser = \Laravel\Socialite\Facades\Socialite::driver('google')->user();
+            $googleUser = \Laravel\Socialite\Facades\Socialite::driver('google')->stateless()->user();
             
             // Look for the user by their Google Email
             $user = \App\Models\User::where('email', $googleUser->email)->first();

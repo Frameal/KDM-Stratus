@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class, 
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+        'api/paymongo/webhook', // Exclude PayMongo webhook from security validation
+        ]);
+
         // 2. Register the IP Restricter so we can apply it ONLY to admin routes
         $middleware->alias([
             'admin.ip' => \App\Http\Middleware\RestrictAdminIp::class,

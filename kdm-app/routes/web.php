@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 
-// Make sure pc is clear
 // Make sure pc is clear and temp accounts are purged
 function autoClearExpiredReservations() {
     $expiredSessions = \App\Models\Reservation::where('status', 'active')
@@ -22,8 +21,7 @@ function autoClearExpiredReservations() {
         \App\Models\Pc::where('id', $session->pc_id)->update(['status' => 'free']);
     }
 
-    // NEW: Auto-Ban Temporary Walk-In Accounts after 20 minutes
-    // We ban them instead of deleting to ensure the ₱5 revenue stays in the ledger!
+    // Auto-Ban Temporary Walk-In Accounts after 20 minutes
     \App\Models\User::where('email', 'LIKE', '%@temp.kdm.local')
         ->where('created_at', '<=', now()->subMinutes(20))
         ->where('is_banned', false)
@@ -59,9 +57,9 @@ Route::post('/check-email', function (Request $request) {
 
 // 3. Customer Dashboard
 Route::get('/dashboard', function () {
-    autoClearExpiredReservations(); // <--- ADDED HERE
+    autoClearExpiredReservations();
 
-// Fetch live global pricing
+    // Fetch live global pricing
     $pricing = [
         '15m' => \App\Models\Setting::where('key', 'price_15m')->value('value') ?? '5.00',
         '30m' => \App\Models\Setting::where('key', 'price_30m')->value('value') ?? '10.00',
@@ -112,7 +110,6 @@ Route::patch('/pcs/{pc}/status', function (Request $request, App\Models\Pc $pc) 
         'details' => "Changed terminal {$pc->pc_number} status from {$oldStatus} to {$request->status}."
     ]);
 
-    // NEW: FIRE THE WEBSOCKET EVENT!
     broadcast(new \App\Events\PcStatusUpdated($pc));
 
     return back();
@@ -143,13 +140,11 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         $shiftRevenue = \App\Models\Reservation::with('user', 'pc')->where('branch_id', $branchId)->whereDate('created_at', \Carbon\Carbon::today())->orderBy('created_at', 'desc')->get();
         $totalRevenue = $shiftRevenue->sum('fee_paid');
 
-        // NEW: Calculate Local Top-Ups (Based on users who have reserved at this branch)
         $userIds = \App\Models\Reservation::where('branch_id', $branchId)->pluck('user_id');
         $todayTopUps = \App\Models\Transaction::whereDate('created_at', \Carbon\Carbon::today())
             ->whereIn('user_id', $userIds)
             ->sum('amount');
             
-        // FIXED: Generating the todayTopUpData for the Vue UI
         $todayTopUpData = \App\Models\Transaction::with('user')
             ->whereDate('created_at', \Carbon\Carbon::today())
             ->whereIn('user_id', $userIds)
@@ -176,7 +171,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
             ->where('status', 'active')
             ->get();
 
-        // ADDED: Fetch the floorplans from the public directory
         $floorplans = [];
         $path = public_path('images/floorplans');
         if (\Illuminate\Support\Facades\File::exists($path)) {
@@ -200,7 +194,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         $branch = App\Models\Branch::find(Auth::user()->branch_id);
         $branch->increment('total_pcs');
 
-        // NEW: Audit Log
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 'action' => 'Hardware Registration', 'details' => "Registered terminal: {$request->pc_number}"]);
 
         return back()->with('success', 'Terminal added successfully.');
@@ -213,7 +206,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
             $branch = App\Models\Branch::find(Auth::user()->branch_id);
             $branch->decrement('total_pcs');
 
-            // NEW: Audit Log
             \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 'action' => 'Hardware Deletion', 'details' => "Permanently deleted terminal: {$pcNumber}"]);
         }
         return back()->with('success', 'Terminal permanently deleted.');
@@ -226,7 +218,7 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         
         $reservations = \App\Models\Reservation::with(['user', 'pc'])
             ->where('branch_id', Auth::user()->branch_id)
-            ->whereIn('status', ['active', 'expired']) // FIXED: Now fetches both!
+            ->whereIn('status', ['active', 'expired']) 
             ->orderBy('expires_at', 'asc')
             ->get();
 
@@ -241,17 +233,14 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
 
         $reservation = \App\Models\Reservation::findOrFail($request->reservation_id);
         
-        // Only allow managers to cancel THEIR branch's reservations
         if ($reservation->branch_id !== Auth::user()->branch_id) abort(403);
 
-        // Free the PC
         $pc = \App\Models\Pc::find($reservation->pc_id);
         $pc->update(['status' => 'free']);
         
         $status = 'cancelled';
         $user = \App\Models\User::find($reservation->user_id);
         
-        // Process Refund if requested
         if ($request->refund) {
             $user->increment('balance', $reservation->fee_paid);
             $status = 'refunded';
@@ -259,7 +248,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
 
         $reservation->update(['status' => $status]);
 
-        // NEW: Audit Log
         \App\Models\AuditLog::create([
             'user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id,
             'action' => $request->refund ? 'Cancel & Refund' : 'Cancel Reservation',
@@ -273,7 +261,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
     Route::get('/history', function () {
         if (!Auth::user()->branch_id) return redirect('/hq/dashboard');
         
-        // Fetch ALL past reservations for this branch (Completed, Cancelled, Refunded)
         $history = \App\Models\Reservation::with(['user', 'pc'])
             ->where('branch_id', Auth::user()->branch_id)
             ->where('status', '!=', 'active')
@@ -288,7 +275,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         if (!Auth::user()->branch_id) return redirect('/hq/dashboard');
         $branch = App\Models\Branch::find(Auth::user()->branch_id);
         
-        // We added a 'status' column requirement here!
         $reports = \App\Models\Report::with('user')->where('branch_name', $branch->name)->orderBy('created_at', 'desc')->get();
         return Inertia::render('Admin/BranchFeedback', ['reports' => $reports]);
     })->name('feedback');
@@ -298,22 +284,19 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         $oldStatus = $report->status ?? 'pending';
         $report->update(['status' => $request->status]);
 
-        // NEW: Audit Log
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 'action' => 'Ticket Status Override', 'details' => "Updated feedback ticket from {$oldStatus} to {$request->status}."]);
 
         return back()->with('success', 'Ticket status updated.');
     })->name('feedback.update');
 
-    // 6. LOCAL CUSTOMER MANAGEMENT (Now supports full Add/Deduct + Bans)
+    // 6. LOCAL CUSTOMER MANAGEMENT
     Route::get('/users', function () {
         if (!Auth::user()->branch_id) return redirect('/hq/dashboard');
         
-        // Managers can see all customers so they can adjust balance
         $customers = User::where('role', 'customer')->orderBy('created_at', 'desc')->get();
         return Inertia::render('Admin/BranchUsers', ['customers' => $customers]);
     })->name('users');
 
-    // REPLACED OLD TOPUP ROUTE WITH FULL BALANCE ADJUSTER
     Route::post('/users/{user}/balance', function (Request $request, User $user) {
         $request->validate(['amount' => 'required|numeric', 'type' => 'required|in:add,minus']);
         
@@ -322,7 +305,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
             $user->decrement('balance', $request->amount);
         } else {
             $user->increment('balance', $request->amount);
-            // Generates the transaction so it shows in the digital ledger for physical cash!
             \App\Models\Transaction::create([
                 'user_id' => $user->id,
                 'reference_id' => 'CASH-' . Auth::user()->branch_id . '-' . time(),
@@ -331,7 +313,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
             ]);
         }
         
-        // NEW: Audit Log
         \App\Models\AuditLog::create([
             'user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 'action' => 'Ledger Override',
             'details' => ($request->type === 'add' ? 'Injected ₱' : 'Deducted ₱') . number_format($request->amount, 2) . " physically on @{$user->username}"
@@ -339,12 +320,10 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         return back()->with('success', 'Account ledger synchronized.');
     })->name('users.balance');
 
-    // NEW MANAGER BAN
     Route::patch('/users/{user}/ban', function (User $user) {
         $user->is_banned = !$user->is_banned;
         $user->save();
         
-        // NEW: Audit Log
         \App\Models\AuditLog::create([
             'user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 'action' => 'Network Ban Override',
             'details' => ($user->is_banned ? 'Banned @' : 'Lifted ban for @') . $user->username
@@ -362,8 +341,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
             ->orderBy('created_at', 'desc')
             ->get();
             
-        // For branch managers, we fetch manual cash top-ups done by them (if you log them). 
-        // For now, we will fetch generic top-ups for their specific users
         $userIds = \App\Models\Reservation::where('branch_id', Auth::user()->branch_id)->pluck('user_id');
         $topups = \App\Models\Transaction::with('user')->whereIn('user_id', $userIds)->orderBy('created_at', 'desc')->get();
 
@@ -380,21 +357,17 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
         return Inertia::render('Admin/BranchLogs', ['logs' => $logs]);
     })->name('logs');
 
-    // POST ROUTE FOR JS PDF EXPORTS
     Route::post('/log-export', function (Request $request) {
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 'action' => 'Data Export', 'details' => $request->details]);
         return response()->json(['success' => true]);
     })->name('log.export');
 
-// NEW: GENERATE TEMPORARY WALK-IN ACCOUNT (SILENT BYPASS)
+    // GENERATE TEMPORARY WALK-IN ACCOUNT
     Route::post('/users/temporary', function () {
         $pin = rand(10000, 99999); 
         $username = 'walkin_' . rand(1000, 9999);
         
         $user = new \App\Models\User();
-        
-        // forceFill bypasses the $fillable array. 
-        // saveQuietly() inserts into the DB without triggering your custom OTP/Email Listeners!
         $user->forceFill([
             'username' => $username,
             'email' => $username . '@temp.kdm.local',
@@ -407,7 +380,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
             'balance' => 5.00 
         ])->saveQuietly();
 
-        // Inject the physical ₱5 cash into the digital ledger
         \App\Models\Transaction::create([
             'user_id' => $user->id,
             'reference_id' => 'CASH-' . Auth::user()->branch_id . '-TEMP-' . time(),
@@ -415,7 +387,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
             'status' => 'paid'
         ]);
 
-        // Log the action securely
         \App\Models\AuditLog::create([
             'user_id' => Auth::id(), 'branch_id' => Auth::user()->branch_id, 
             'action' => 'Walk-In Creation',
@@ -435,7 +406,7 @@ Route::middleware(['auth', 'admin.ip'])->prefix('manager')->name('branch.')->gro
 // --------------------------------------------------------
 Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(function () {
     
-    // 1. GLOBAL DASHBOARD (Network Topology)
+    // 1. GLOBAL DASHBOARD
     Route::get('/dashboard', function () {
         autoClearExpiredReservations();
 
@@ -446,7 +417,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             'total_reports' => \App\Models\Report::where('status', '!=', 'resolved')->count(),
         ];
         
-        // Global Revenue Aggregator (Today)
         $todayRevenue = \App\Models\Reservation::whereDate('created_at', \Carbon\Carbon::today())
             ->where('status', '!=', 'refunded')
             ->sum('fee_paid');
@@ -459,11 +429,11 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             'stats' => $stats,
             'todayRevenue' => $todayRevenue,
             'todayTopUps' => $todayTopUps,
-            'branches' => Branch::all() // To map open/closed statuses later
+            'branches' => Branch::all()
         ]);
     })->name('dashboard');
 
-    // 2. BRANCH OPERATIONS (Create, Edit, View)
+    // 2. BRANCH OPERATIONS
     Route::get('/branches', function (Request $request) {
         autoClearExpiredReservations();
         
@@ -477,13 +447,11 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         $pcs = Pc::where('branch_id', $selectedBranchId)->get();
         $reports = \App\Models\Report::with('user')->where('branch_name', $selectedBranch->name)->orderBy('created_at', 'desc')->get();
         
-        // Fetch active reservations for the PC mapping
         $activeReservations = \App\Models\Reservation::with('user')
             ->where('branch_id', $selectedBranchId)
             ->where('status', 'active')
             ->get();
             
-        // Fetch Floorplans
         $floorplans = [];
         $path = public_path('images/floorplans');
         if (\Illuminate\Support\Facades\File::exists($path)) {
@@ -503,7 +471,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         ]);
     })->name('branches');
 
-    // Branch Creation 
     Route::post('/branches', function (Request $request) {
         $request->validate([
             'name' => 'required|string|unique:branches,name',
@@ -515,21 +482,18 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             'schema_image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
-        // 1. Create the Branch
         $branch = Branch::create([
             'name' => $request->name,
             'address' => $request->address,
             'total_pcs' => $request->initial_pcs
         ]);
 
-        // 2. Upload Schematics if provided
         if ($request->hasFile('schema_image')) {
             $file = $request->file('schema_image');
             $filename = strtolower(str_replace(' ', '_', $request->name)) . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('images/floorplans'), $filename);
         }
 
-        // 3. Create the Branch Manager Account
         \App\Models\User::create([
             'username' => $request->manager_username,
             'email' => $request->manager_email,
@@ -541,7 +505,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             'contact_number' => 'N/A'
         ]);
 
-        // 4. Auto-generate PCs
         for ($i = 1; $i <= $request->initial_pcs; $i++) {
             Pc::create([
                 'branch_id' => $branch->id,
@@ -550,12 +513,10 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             ]);
         }
 
-        // NEW: Audit Log
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => null, 'action' => 'Node Deployment', 'details' => "Initialized new branch: {$request->name}"]);
         return back()->with('success', 'Branch, Schematics, and Manager Account deployed successfully.');
     })->name('branches.store');
 
-    // Advanced Branch Editor
     Route::post('/branches/{branch}/edit', function (Request $request, Branch $branch) {
         $request->validate([
             'name' => 'required|string',
@@ -569,14 +530,12 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         if ($request->name !== $branch->name) \App\Models\Report::where('branch_name', $branch->name)->update(['branch_name' => $request->name]);
         $branch->update(['name' => $request->name, 'address' => $request->address]);
 
-        // Upload New Schematics
         if ($request->hasFile('schema_image')) {
             $file = $request->file('schema_image');
             $filename = strtolower(str_replace(' ', '_', $request->name)) . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('images/floorplans'), $filename);
         }
 
-        // Update Manager Account
         $manager = User::where('role', 'branch_manager')->where('branch_id', $branch->id)->first();
         if ($manager && $request->manager_username) {
             $manager->username = $request->manager_username;
@@ -584,7 +543,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             $manager->save();
         }
 
-        // Generate Additional PCs
         if ($request->add_pcs > 0) {
             $currentCount = $branch->total_pcs;
             for ($i = 1; $i <= $request->add_pcs; $i++) {
@@ -593,26 +551,22 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             $branch->increment('total_pcs', $request->add_pcs);
         }
 
-        // NEW: Audit Log
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => null, 'action' => 'Metadata Update', 'details' => "Updated settings for branch: {$branch->name}"]);
         return back()->with('success', 'Branch ecosystem fully synchronized.');
     })->name('branches.full_update');
 
-    // Delete Branch
     Route::delete('/branches/{branch}', function (Branch $branch) {
         $branchName = $branch->name;
         Pc::where('branch_id', $branch->id)->delete();
         User::where('role', 'branch_manager')->where('branch_id', $branch->id)->delete();
         $branch->delete();
         
-        // NEW: Audit Log
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => null, 'action' => 'Node Deletion', 'details' => "Permanently purged branch: {$branchName}"]);
         return redirect()->route('hq.branches')->with('success', 'Branch and all localized hardware purged.');
     })->name('branches.destroy');
 
     // 3. ENTERPRISE USER MANAGEMENT
     Route::get('/users', function () {
-        // We use a subquery to find the LAST place they reserved at
         $customers = User::where('role', 'customer')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -628,7 +582,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         return Inertia::render('Admin/HQUsers', ['customers' => $customers]); 
     })->name('users');
     
-    // Balance Adjuster (Add/Minus)
     Route::post('/users/{user}/balance', function (Request $request, User $user) {
         $request->validate(['amount' => 'required|numeric', 'type' => 'required|in:add,minus']);
         
@@ -639,7 +592,6 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
             $user->increment('balance', $request->amount);
         }
 
-        // NEW: Audit Log
         \App\Models\AuditLog::create([
             'user_id' => Auth::id(), 'branch_id' => null, 'action' => 'Ledger Override',
             'details' => ($request->type === 'add' ? 'Injected ₱' : 'Seized ₱') . number_format($request->amount, 2) . " on @{$user->username}"
@@ -647,12 +599,10 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         return back()->with('success', 'Account ledger synchronized.');
     })->name('users.balance');
 
-    // Ban / Unban Toggle
     Route::patch('/users/{user}/ban', function (User $user) {
         $user->is_banned = !$user->is_banned;
         $user->save();
         
-        // NEW: Audit Log
         \App\Models\AuditLog::create([
             'user_id' => Auth::id(), 'branch_id' => null, 'action' => 'Network Ban Override',
             'details' => ($user->is_banned ? 'Banned @' : 'Lifted ban for @') . $user->username
@@ -660,27 +610,18 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         return back()->with('success', 'Account restriction status toggled.');
     })->name('users.ban');
 
-    // 4. GLOBAL REPORTS (Massive Filter Logic)
+    // 4. GLOBAL REPORTS
     Route::get('/reports', function (Request $request) {
         $query = \App\Models\Report::with('user');
 
-        // Apply dynamic filters if they exist in the URL
-        if ($request->filled('branch')) {
-            $query->where('branch_name', $request->branch);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('type')) {
-            $query->where('concern_type', $request->type);
-        }
-        if ($request->filled('search')) {
-            $query->where('details', 'LIKE', '%' . $request->search . '%');
-        }
+        if ($request->filled('branch')) $query->where('branch_name', $request->branch);
+        if ($request->filled('status')) $query->where('status', $request->status);
+        if ($request->filled('type')) $query->where('concern_type', $request->type);
+        if ($request->filled('search')) $query->where('details', 'LIKE', '%' . $request->search . '%');
 
         return Inertia::render('Admin/HQReports', [
             'reports' => $query->orderBy('created_at', 'desc')->get(),
-            'branches' => Branch::all() // For the dropdown filter
+            'branches' => Branch::all()
         ]); 
     })->name('reports');
 
@@ -701,12 +642,11 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         \App\Models\Setting::where('key', 'price_30m')->update(['value' => $request->price_30m]);
         \App\Models\Setting::where('key', 'price_60m')->update(['value' => $request->price_60m]);
 
-        // NEW: Audit Log
         \App\Models\AuditLog::create(['user_id' => Auth::id(), 'branch_id' => null, 'action' => 'Pricing Matrix Sync', 'details' => "Updated global rates to {$request->price_15m} / {$request->price_30m} / {$request->price_60m}"]);
         return back()->with('success', 'Global pricing variables synchronized across network.');
     })->name('pricing.update');
 
-    // 6. GCS BACKUPS (Simulated for Demo)
+    // 6. GCS BACKUPS (Simulated)
     Route::get('/backups', function () {
         $logs = [
             ['id' => 1, 'type' => 'Automated Backup', 'status' => 'Success', 'size' => '42 MB', 'date' => now()->subDays(1)->format('M d, Y H:i')],
@@ -722,16 +662,14 @@ Route::middleware(['auth', 'admin.ip'])->prefix('hq')->name('hq.')->group(functi
         return back()->with('success', 'Manual SQL Snapshot secured to Google Cloud Storage.');
     })->name('backups.trigger');
 
-    // HQ Transaction History (With Branch Filtering for Top-ups)
+    // HQ Transaction History
     Route::get('/transactions', function (Request $request) {
         $branchFilter = $request->query('branch', null);
         
         $reservationsQuery = \App\Models\Reservation::with(['user', 'pc', 'branch'])->where('status', '!=', 'active')->orderBy('created_at', 'desc');
         if ($branchFilter) $reservationsQuery->where('branch_id', $branchFilter);
-        $reservations = $reservationsQuery->get();
 
         $topupsQuery = \App\Models\Transaction::with('user')->orderBy('created_at', 'desc');
-        
         if ($branchFilter) {
             $userIds = \App\Models\Reservation::where('branch_id', $branchFilter)->pluck('user_id');
             $topupsQuery->whereIn('user_id', $userIds);
@@ -787,7 +725,6 @@ Route::post('/reports', function (\Illuminate\Http\Request $request) {
         'details' => 'required|string',
     ]);
 
-    // ANTI-SPAM: Count how many reports this user made today
     $todayCount = \App\Models\Report::where('user_id', \Illuminate\Support\Facades\Auth::id())
         ->whereDate('created_at', \Carbon\Carbon::today())
         ->count();
@@ -857,7 +794,6 @@ Route::post('/topup/generate', function (Illuminate\Http\Request $request) {
                                 'quantity' => 1
                             ]
                         ],
-                        // FIXED: Added 'qrph' to the allowed payment methods list!
                         'payment_method_types' => ['qrph', 'gcash', 'paymaya'],
                         'success_url' => route('dashboard'), 
                         'cancel_url' => route('dashboard'),
@@ -879,7 +815,7 @@ Route::post('/topup/generate', function (Illuminate\Http\Request $request) {
                 'amount' => $request->amount,
                 'status' => 'pending'
             ]);
-            
+
             return response()->json(['checkout_url' => $data['data']['attributes']['checkout_url']]);
         }
 
@@ -896,7 +832,7 @@ Route::post('/topup/generate', function (Illuminate\Http\Request $request) {
 Route::post('/reserve', function (Illuminate\Http\Request $request) {
     $request->validate([
         'pc_id' => 'required|exists:pcs,id',
-        'duration' => 'required|in:15,30,60', // 15m, 30m, 1hr
+        'duration' => 'required|in:15,30,60',
     ]);
 
     $costs = [
@@ -909,17 +845,12 @@ Route::post('/reserve', function (Illuminate\Http\Request $request) {
     $user = Auth::user();
     $pc = \App\Models\Pc::findOrFail($request->pc_id);
 
-    // 1. Double check security
     if ($user->balance < $cost) return back()->withErrors(['reservation' => 'Insufficient funds.']);
     if ($pc->status !== 'free') return back()->withErrors(['reservation' => 'This PC is no longer available.']);
 
-    // 2. Lock the PC
     $pc->update(['status' => 'reserved']);
-
-    // 3. Deduct the Money (Non-refundable upon execution!)
     $user->decrement('balance', $cost);
 
-    // 4. Create the formal record
     \App\Models\Reservation::create([
         'user_id' => $user->id,
         'pc_id' => $pc->id,
@@ -941,10 +872,7 @@ Route::post('/reserve/cancel', function (Illuminate\Http\Request $request) {
         ->where('status', 'active')
         ->firstOrFail();
 
-    // Free the PC
     \App\Models\Pc::where('id', $reservation->pc_id)->update(['status' => 'free']);
-    
-    // Kill the reservation (No refund issued)
     $reservation->update(['status' => 'cancelled']);
 
     return back()->with('success', 'Reservation manually cancelled.');
@@ -956,7 +884,6 @@ Route::post('/reserve/expire', function (Illuminate\Http\Request $request) {
     
     $reservation = \App\Models\Reservation::find($request->reservation_id);
 
-    // FIXED: Added a 60-second buffer (->addSeconds(60)) to prevent clock desync bugs!
     if ($reservation && $reservation->status === 'active' && $reservation->expires_at <= now()->addSeconds(60)) {
         $reservation->update(['status' => 'expired']);
         \App\Models\Pc::where('id', $reservation->pc_id)->update(['status' => 'free']);
@@ -973,16 +900,13 @@ Route::post('/reserve/expire', function (Illuminate\Http\Request $request) {
 Route::get('/api/terminal-check/{pc_number}', function ($pc_number) {
     $pc = \App\Models\Pc::where('pc_number', $pc_number)->first();
     
-    // Fail-safe: If the PC doesn't exist, keep it locked.
     if (!$pc) return response()->json(['action' => 'lock', 'reason' => 'PC Not Found']);
 
-    // Check if the PC currently has an active reservation
     if ($pc->status === 'reserved' || $pc->status === 'occupied') {
         $reservation = \App\Models\Reservation::where('pc_id', $pc->id)
             ->where('status', 'active')
             ->first();
 
-        // If a reservation exists AND time has not run out
         if ($reservation && $reservation->expires_at > now()) {
             return response()->json([
                 'action' => 'unlock',
@@ -991,14 +915,12 @@ Route::get('/api/terminal-check/{pc_number}', function ($pc_number) {
             ]);
         }
 
-        // If time ran out between checks, forcefully expire it right now
         if ($reservation && $reservation->expires_at <= now()) {
             $reservation->update(['status' => 'expired']);
             $pc->update(['status' => 'free']);
         }
     }
 
-    // Default state: Lock the screen.
     return response()->json(['action' => 'lock', 'reason' => 'No active time']);
 });
 
@@ -1006,7 +928,6 @@ Route::get('/api/terminal-check/{pc_number}', function ($pc_number) {
 // HARDWARE CLIENT API (For Python Desktop App)
 // --------------------------------------------------------
 
-// 1. Hardware Login Endpoint (Pay-As-You-Go Logic)
 Route::post('/api/terminal/login', function (Illuminate\Http\Request $request) {
     $request->validate([
         'pc_number' => 'required|string',
@@ -1024,7 +945,6 @@ Route::post('/api/terminal/login', function (Illuminate\Http\Request $request) {
         return response()->json(['success' => false, 'message' => 'Terminal unavailable.']);
     }
 
-    // Calculate their Maximum Time based on the 1-Hour Rate
     $hourlyRate = (float) (\App\Models\Setting::where('key', 'price_60m')->value('value') ?? 25.00);
     $ratePerMinute = $hourlyRate / 60;
 
@@ -1032,12 +952,9 @@ Route::post('/api/terminal/login', function (Illuminate\Http\Request $request) {
         return response()->json(['success' => false, 'message' => 'Insufficient wallet balance.']);
     }
 
-    // Calculate maximum minutes they can play before their wallet hits 0
     $maxMinutes = floor($user->balance / $ratePerMinute);
-
     $pc->update(['status' => 'occupied']);
 
-    // We create the session, but we DO NOT deduct the money yet!
     $reservation = \App\Models\Reservation::create([
         'user_id' => $user->id,
         'pc_id' => $pc->id,
@@ -1055,7 +972,6 @@ Route::post('/api/terminal/login', function (Illuminate\Http\Request $request) {
     ]);
 });
 
-// 2. Hardware Sync & Auto-Logout Endpoint
 Route::get('/api/terminal/sync/{pc_number}', function ($pc_number) {
     $pc = \App\Models\Pc::where('pc_number', $pc_number)->first();
     if (!$pc) return response()->json(['action' => 'lock']);
@@ -1067,10 +983,9 @@ Route::get('/api/terminal/sync/{pc_number}', function ($pc_number) {
             return response()->json(['action' => 'unlock', 'expires_at' => $reservation->expires_at]);
         }
 
-        // Wallet is empty! Force expire and charge them.
         if ($reservation && $reservation->expires_at <= now()) {
             $user = \App\Models\User::find($reservation->user_id);
-            $user->update(['balance' => 0]); // Wallet is emptied
+            $user->update(['balance' => 0]); 
             
             $reservation->update(['status' => 'completed', 'fee_paid' => ($reservation->duration_minutes * (($hourlyRate ?? 25)/60))]);
             $pc->update(['status' => 'free']);
@@ -1079,21 +994,18 @@ Route::get('/api/terminal/sync/{pc_number}', function ($pc_number) {
     return response()->json(['action' => 'lock']);
 });
 
-// 3. Early Logout Endpoint (Charge only for time used)
 Route::post('/api/terminal/logout', function (Illuminate\Http\Request $request) {
     $pc = \App\Models\Pc::where('pc_number', $request->pc_number)->first();
     if ($pc) {
         $reservation = \App\Models\Reservation::where('pc_id', $pc->id)->where('status', 'active')->first();
         if ($reservation) {
-            // Calculate EXACT time used
             $minutesUsed = now()->diffInMinutes($reservation->created_at);
-            if ($minutesUsed < 1) $minutesUsed = 1; // Minimum 1 minute charge
+            if ($minutesUsed < 1) $minutesUsed = 1; 
 
             $hourlyRate = (float) (\App\Models\Setting::where('key', 'price_60m')->value('value') ?? 25.00);
             $ratePerMinute = $hourlyRate / 60;
             $cost = $minutesUsed * $ratePerMinute;
 
-            // Deduct exact cost from wallet
             $user = \App\Models\User::find($reservation->user_id);
             if ($user) {
                 $user->decrement('balance', $cost);
@@ -1104,6 +1016,66 @@ Route::post('/api/terminal/logout', function (Illuminate\Http\Request $request) 
         $pc->update(['status' => 'free']);
     }
     return response()->json(['success' => true]);
+});
+
+// --------------------------------------------------------
+// PAYMONGO WEBHOOK RECEIVER (Background Balance Credit)
+// --------------------------------------------------------
+Route::post('/api/paymongo/webhook', function (Illuminate\Http\Request $request) {
+    // SAFETY BUFFER: Pause execution for exactly 1.5 seconds.
+    // This gives the server plenty of time to finish writing the pending transaction row.
+    usleep(1500000); 
+
+    $payload = $request->json()->all();
+    
+    if (!isset($payload['data']['attributes']['type'])) {
+        return response()->json(['status' => 'missing type'], 200);
+    }
+
+    $eventType = $payload['data']['attributes']['type'];
+    $checkoutSessionId = null;
+
+    if ($eventType === 'checkout_session.payment.paid') {
+        $checkoutSessionId = $payload['data']['attributes']['data']['id'] ?? null;
+    } elseif ($eventType === 'payment.paid') {
+        $checkoutSessionId = $payload['data']['attributes']['data']['object']['external_reference'] ?? null;
+    }
+
+    if ($checkoutSessionId) {
+        // Query the database for the pending transaction
+        $transaction = \App\Models\Transaction::where('reference_id', $checkoutSessionId)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($transaction) {
+            // 1. Permanently update the transaction row status to paid
+            $transaction->update(['status' => 'paid']);
+
+            // 2. Hydrate the user's wallet balance
+            $user = \App\Models\User::find($transaction->user_id);
+            if ($user) {
+                $user->increment('balance', $transaction->amount);
+                
+                // Establish log entry details for audit trails
+                \App\Models\AuditLog::create([
+                    'user_id' => $user->id,
+                    'branch_id' => null,
+                    'action' => 'PayMongo Top-Up Success',
+                    'details' => "Credited ₱" . number_format($transaction->amount, 2) . " via digital gateway."
+                ]);
+                
+                // Update diagnostic tracker
+                $debugInfo = ['parsed_session_id' => $checkoutSessionId, 'transaction_found' => true, 'status' => 'success'];
+                file_put_contents(storage_path('logs/paymongo_diagnostic.json'), json_encode($debugInfo));
+                
+                return response()->json(['status' => 'success'], 200);
+            }
+        }
+    }
+
+    $debugInfo = ['parsed_session_id' => $checkoutSessionId, 'transaction_found' => false, 'status' => 'ignored_or_failed'];
+    file_put_contents(storage_path('logs/paymongo_diagnostic.json'), json_encode($debugInfo));
+    return response()->json(['status' => 'ignored'], 200);
 });
 
 

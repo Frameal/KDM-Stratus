@@ -33,15 +33,13 @@ KDM-Stratus is a hybrid-cloud infrastructure I built to modernize and streamline
 ### Step-by-Step Setup
 
 1. **Clone the repository**
-   ```bash
    git clone [https://github.com/yourusername/kdm-stratus.git](https://github.com/yourusername/kdm-stratus.git)
    cd kdm-stratus
 
-   Configure the Server (Laravel)
-
+Configure the Server (Laravel)
 
 2. **Configure the Server (Laravel)**
-   ```bash
+
   cd server
   composer install
   copy .env.example .env

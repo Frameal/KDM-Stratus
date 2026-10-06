@@ -10,7 +10,7 @@ A Project-Based Learning (PBL) Project for the subjects, System Administration (
 * **Automated GCP Backups:** Scheduled, automated MySQL database backups securely pushed to Google Cloud Storage.
 * **Cashless Payments:** Integrated PayMongo API to allow seamless e-wallet top-ups directly from the terminals.
 
-## 👥 System Roles
+## System Roles
 
 * **HQ / Superadmin**
   * Full multi-tiered dashboard for global oversight.
@@ -24,7 +24,7 @@ A Project-Based Learning (PBL) Project for the subjects, System Administration (
   * Real-time session timer and lock screen UI.
   * Self-service e-wallet top-ups via PayMongo.
 
-## 🛠️ How to Run
+## How to Run
 
 ### Prerequisites
 * Windows Server with IIS configured
@@ -36,13 +36,9 @@ A Project-Based Learning (PBL) Project for the subjects, System Administration (
 
 1. **Clone the repository**
    git clone [https://github.com/yourusername/kdm-stratus.git](https://github.com/yourusername/kdm-stratus.git)
-   cd kdm-stratus
-
-Configure the Server (Laravel)
 
 2. **Configure the Server (Laravel)**
 
-  cd server
   composer install
   copy .env.example .env
   php artisan key:generate

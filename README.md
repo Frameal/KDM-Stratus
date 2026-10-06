@@ -1,6 +1,8 @@
 # KDM-Stratus
 
-KDM-Stratus is a hybrid-cloud infrastructure I built to modernize and streamline operations across 28 Kadiliman Esports Cafe branches. It handles real-time terminal telemetry, automated cashless payments, and centralizes multi-branch management into a single system.
+KDM-Stratus is a hybrid-cloud infrastructure built to modernize and streamline operations across 28 Kadiliman Esports Cafe branches. It handles real-time terminal telemetry, automated cashless payments, and centralizes multi-branch management into a single system. 
+
+A Project-Based Learning (PBL) Project for the subjects, System Administration (SERADM), Virtualization and Cloud Computing (VCLOUD), and Project Management (PROJMGMT).
 
 ## 🚀 Features & Highlights
 * **Hybrid Infrastructure:** Utilizes a physical LAN setup backed by Windows Server (IIS) combined with a hub-and-spoke WAN across the public internet to connect all 28 branches.

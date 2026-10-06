@@ -4,6 +4,10 @@ KDM-Stratus is a hybrid-cloud infrastructure built to modernize and streamline o
 
 A Project-Based Learning (PBL) Project for the subjects, System Administration (SERADM), Virtualization and Cloud Computing (VCLOUD), and Project Management (PROJMGMT).
 
+
+### Note that this website's GCP and domain (kdmstratus.org) is not live anymore
+
+
 ## Features & Highlights
 * **Hybrid Infrastructure:** Utilizes a physical LAN setup backed by Windows Server (IIS) combined with a hub-and-spoke WAN across the public internet to connect all 28 branches.
 * **Custom Python Client:** Lightweight Python-based client application installed on local gaming terminals to handle session locking, timers, and real-time telemetry.

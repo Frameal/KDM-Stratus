@@ -39,20 +39,22 @@ A Project-Based Learning (PBL) Project for the subjects, System Administration (
 
 2. **Configure the Server (Laravel)**
 
-  composer install
-  copy .env.example .env
-  php artisan key:generate
+*  composer install
+*  copy .env.example .env
+*  php artisan key:generate
   
 Update your .env file with your MySQL credentials, GCP bucket details, and PayMongo API keys.
 
 3. **Set up the Database**
-php artisan migrate --seed
+
+* php artisan migrate --seed
 
 Note: Point your IIS site document root to the public directory of the Laravel app.
 
 4. **Run the Terminal Client (Python)**
-  cd ../client
-  pip install -r requirements.txt
-  python main.py
+
+*  cd ../client
+*  pip install -r requirements.txt
+*  python main.py
 
 Make sure to configure the client's .env or config file to point to your central server's IP/Domain.
